@@ -1,0 +1,8 @@
+{
+  "users": {
+    "example-user": {
+      "clientId": "example-user",
+      "token": "REPLACE_WITH_A_SECURE_RANDOM_TOKEN"
+    }
+  }
+}
