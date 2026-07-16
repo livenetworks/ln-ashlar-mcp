@@ -6,5 +6,6 @@
 	"geminiBin": "gemini",
 	"geminiHome": "/path/to/gemini-runner",
 	"geminiCwd": "/path/to/gemini-runner/work",
-	"maxOutputBytes": 1048576
+	"maxOutputBytes": 1048576,
+	"auditLog": true
 }

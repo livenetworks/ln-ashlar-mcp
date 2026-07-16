@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { runGemini, GeminiError, DEFAULT_CONFIG } from "../lib/gemini.js";
-import { extractVerdict } from "../lib/gemini-prompts.js";
+import { extractVerdict, buildReviewPrompt } from "../lib/gemini-prompts.js";
 import { handler } from "../tools/review_plan.js";
 
 function fakeExec(result) {
@@ -103,5 +103,60 @@ describe("runGemini — quota exhausted (optional extra)", () => {
 				return true;
 			}
 		);
+	});
+});
+
+describe("buildReviewPrompt — iteration continuity", () => {
+	test("includes 'Progress Since Last Review' when previousFeedback is set", () => {
+		const prompt = buildReviewPrompt({
+			planType: "implementation",
+			plan: "some plan",
+			previousFeedback: "previous critique text"
+		});
+		assert.match(prompt, /Progress Since Last Review/);
+	});
+
+	test("omits 'Progress Since Last Review' when previousFeedback is absent", () => {
+		const prompt = buildReviewPrompt({
+			planType: "implementation",
+			plan: "some plan"
+		});
+		assert.doesNotMatch(prompt, /Progress Since Last Review/);
+	});
+});
+
+describe("buildReviewPrompt — wrap_up retrospective", () => {
+	test("wrapUp true produces the retrospective instruction and omits the normal criteria", () => {
+		const prompt = buildReviewPrompt({
+			planType: "implementation",
+			plan: "final plan text",
+			previousFeedback: "critique 1\ncritique 2",
+			wrapUp: true
+		});
+		assert.match(prompt, /Review Summary/);
+		assert.doesNotMatch(prompt, /senior engineer reviewing an implementation/);
+	});
+});
+
+describe("review_plan handler — wrap_up exempt from iteration cap", () => {
+	test("wrap_up: true with iteration 4 does not trigger the iteration-cap rejection", async () => {
+		// The handler builds its own config/spawn via loadGeminiConfig()/runGemini() with no
+		// injectable execFileFn seam, and the real gemini-cli is installed + quota-exhausted on
+		// this host — a live call must not happen. Blanking PATH forces any attempted spawn of
+		// "gemini" to fail fast with ENOENT (CLI_MISSING) inside the child's own environment,
+		// without ever reaching the network/CLI. This still proves the iteration-cap guard
+		// (which short-circuits BEFORE any spawn) was skipped: if the cap had fired we'd see the
+		// "exceeds the maximum" text; instead we see the CLI_MISSING failure from the (blocked)
+		// spawn attempt, proving execution proceeded past the guard.
+		const originalPath = process.env.PATH;
+		process.env.PATH = "";
+		try {
+			const result = await handler({ plan: "final plan", iteration: 4, wrap_up: true, previous_feedback: "c1\nc2" });
+			assert.doesNotMatch(result.content[0].text, /exceeds the maximum/);
+			assert.equal(result.isError, true);
+			assert.match(result.content[0].text, /gemini-cli not found/);
+		} finally {
+			process.env.PATH = originalPath;
+		}
 	});
 });

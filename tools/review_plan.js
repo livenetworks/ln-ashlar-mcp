@@ -23,6 +23,25 @@ const logger = winston.createLogger({
 	]
 });
 
+// Winston logger for the full review audit trail (complete prompt + response text)
+const auditLogger = winston.createLogger({
+	level: "info",
+	format: winston.format.combine(
+		winston.format.timestamp(),
+		winston.format.json()
+	),
+	transports: [
+		new winston.transports.DailyRotateFile({
+			dirname: "logs",
+			filename: "review-audit-%DATE%.log",
+			datePattern: "YYYY-MM-DD",
+			zippedArchive: true,
+			maxSize: "20m",
+			maxFiles: "14d"
+		})
+	]
+});
+
 export const name = "review_plan";
 
 export const definition = {
@@ -36,7 +55,11 @@ export const definition = {
 		"`previous_feedback` set to the critique you just received; (4) STOP when " +
 		"the Verdict is APPROVE or when `iteration` reaches 3 — the server rejects " +
 		"`iteration` > 3. Pass `context` (project background/constraints) on every " +
-		"call so the reviewer judges against your constraints.",
+		"call so the reviewer judges against your constraints. After APPROVE or " +
+		"iteration 3, you MAY make one additional call with `wrap_up: true` " +
+		"(concatenate ALL previous critiques into `previous_feedback` and pass the " +
+		"final plan as `plan`) to get a short retrospective of the whole review " +
+		"conversation for the user — this call is exempt from the iteration cap.",
 	inputSchema: {
 		plan: z.string().min(1).describe("The plan markdown to be reviewed"),
 		plan_type: z
@@ -45,17 +68,21 @@ export const definition = {
 			.describe("Type of plan under review; omit for a generic review"),
 		context: z.string().optional().describe("Project background/constraints for the reviewer to judge against"),
 		previous_feedback: z.string().optional().describe("The critique received on the previous iteration, when revising"),
-		iteration: z.number().int().min(1).optional().describe("Current iteration number; server rejects values above the configured max (default 3)")
+		iteration: z.number().int().min(1).optional().describe("Current iteration number; server rejects values above the configured max (default 3)"),
+		wrap_up: z
+			.boolean()
+			.optional()
+			.describe("Set true on a final extra call AFTER the loop ends to get a short retrospective of the whole review conversation; pass ALL previous critiques concatenated in previous_feedback")
 	}
 };
 
 export const handler = async (args, extra) => {
-	const { plan, plan_type, context, previous_feedback, iteration } = args;
+	const { plan, plan_type, context, previous_feedback, iteration, wrap_up } = args;
 	const cfg = loadGeminiConfig();
 	const planType = plan_type || "generic";
 	const apiKeyId = extra?.authInfo?.clientId ?? "unknown";
 
-	if (iteration > cfg.maxIterations) {
+	if (!wrap_up && iteration > cfg.maxIterations) {
 		return {
 			content: [{
 				type: "text",
@@ -65,7 +92,7 @@ export const handler = async (args, extra) => {
 		};
 	}
 
-	const prompt = buildReviewPrompt({ planType, context, previousFeedback: previous_feedback, plan });
+	const prompt = buildReviewPrompt({ planType, context, previousFeedback: previous_feedback, plan, wrapUp: wrap_up });
 	const start = Date.now();
 
 	try {
@@ -77,12 +104,26 @@ export const handler = async (args, extra) => {
 			apiKeyId,
 			plan_type: planType,
 			iteration,
+			wrap_up: !!wrap_up,
 			charsIn: prompt.length,
 			charsOut: text.length,
 			durationMs,
 			verdict,
 			model: cfg.model
 		});
+		if (cfg.auditLog) {
+			auditLogger.info({
+				event: "review_audit",
+				apiKeyId,
+				plan_type: planType,
+				iteration,
+				wrap_up: !!wrap_up,
+				model: cfg.model,
+				durationMs,
+				prompt,
+				response: text
+			});
+		}
 		return { content: [{ type: "text", text }] };
 	} catch (e) {
 		const durationMs = Date.now() - start;
@@ -91,12 +132,26 @@ export const handler = async (args, extra) => {
 			apiKeyId,
 			plan_type: planType,
 			iteration,
+			wrap_up: !!wrap_up,
 			charsIn: prompt.length,
 			durationMs,
 			code: e.code || "ERROR",
 			model: cfg.model,
 			error: e.message
 		});
+		if (cfg.auditLog) {
+			auditLogger.info({
+				event: "review_audit",
+				apiKeyId,
+				plan_type: planType,
+				iteration,
+				wrap_up: !!wrap_up,
+				model: cfg.model,
+				durationMs,
+				prompt,
+				response: e.message
+			});
+		}
 		return { content: [{ type: "text", text: e.message }], isError: true };
 	}
 };

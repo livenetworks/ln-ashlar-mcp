@@ -6,5 +6,6 @@
 	"geminiBin": "gemini",
 	"geminiHome": "/home/mcp",
 	"geminiCwd": "/home/mcp/gemini-work",
-	"maxOutputBytes": 1048576
+	"maxOutputBytes": 1048576,
+	"auditLog": true
 }

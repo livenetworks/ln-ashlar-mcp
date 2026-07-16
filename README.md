@@ -116,7 +116,13 @@ api-key id, plan_type, iteration, chars in/out, времетраење, verdict,
 има read-only MCP пристап до docs корпусот на истиот сервер (клуч
 `gemini-reviewer`, `review_plan` исклучен од неговите алатки против
 рекурзија); поради ова agentic tool round-trips, серверскиот timeout е 240s
-(`config/gemini.json`, `timeoutMs`).
+(`config/gemini.json`, `timeoutMs`). Секој повик се логира и во посебен
+целосен аудит лог (`logs/review-audit-*.log`) со целосната содржина на
+prompt-от и одговорот, што може да се исклучи со `auditLog: false` во
+`config/gemini.json`. По завршување на јамката (APPROVE или итерација 3),
+повикувачкиот агент може да направи дополнителен повик со `wrap_up: true`
+(проследувајќи ги сите претходни критики во `previous_feedback`) за да добие
+кратко завршно резиме на текот на целата ревизија.
 
 ## Управување со корисници
 
