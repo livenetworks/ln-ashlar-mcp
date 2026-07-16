@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 import { secureCompare } from './secure-compare.js';
 import { getUsers } from './user-store.js';
+import { resourceMetadataUrl } from './public-url.js';
 
 // Resolve __dirname for ES module
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,6 +17,12 @@ try {
 } catch (e) {
   console.error('Failed to load JWT secret:', e);
 }
+
+// Emit an RFC 9728-compliant 401 so MCP clients can discover the auth server
+const unauthorized = (req, res, error) => {
+  res.set('WWW-Authenticate', `Bearer resource_metadata="${resourceMetadataUrl(req)}"`);
+  return res.status(401).json({ error });
+};
 
 /**
  * Express middleware that validates either:
@@ -38,7 +45,7 @@ export default function authMiddleware(req, res, next) {
   }
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing Authorization header' });
+    return unauthorized(req, res, 'Missing Authorization header');
   }
   const token = authHeader.slice('Bearer '.length).trim();
 
@@ -49,23 +56,28 @@ export default function authMiddleware(req, res, next) {
   const { users } = getUsers();
 
   if (isJwt) {
+    let payload;
     try {
-      const payload = jwt.verify(token, jwtSecret);
+      payload = jwt.verify(token, jwtSecret);
       clientId = payload.clientId;
     } catch (e) {
-      return res.status(401).json({ error: 'Invalid JWT' });
+      return unauthorized(req, res, 'Invalid JWT');
+    }
+    if (payload.type === 'refresh') {
+      return unauthorized(req, res, 'Refresh token cannot be used as access token');
     }
     if (!clientId || !users[clientId]) {
-      return res.status(401).json({ error: 'Unknown clientId in JWT' });
+      return unauthorized(req, res, 'Unknown clientId in JWT');
     }
     req.user = { username: clientId, clientId };
     req.authUser = clientId;
+    req.auth = { token: '***', clientId, scopes: [], extra: { username: clientId } };
     return next();
   }
 
   // API‑key path: require both token and clientId header
   if (!clientId) {
-    return res.status(401).json({ error: 'Missing client ID header' });
+    return unauthorized(req, res, 'Missing client ID header');
   }
 
   // Find user matching both clientId and token
@@ -73,10 +85,11 @@ export default function authMiddleware(req, res, next) {
     ([, data]) => data.clientId === clientId && secureCompare(data.token, token)
   );
   if (!userEntry) {
-    return res.status(401).json({ error: 'Invalid client ID or token' });
+    return unauthorized(req, res, 'Invalid client ID or token');
   }
   const [username] = userEntry;
   req.user = { username, clientId };
   req.authUser = username;
+  req.auth = { token: '***', clientId, scopes: [], extra: { username } };
   next();
 }

@@ -2,16 +2,19 @@
 name: fake-pattern
 classification: pattern
 status: stable
+domain: frontend
 summary: Fake pattern documentation used for ashlar-docs test fixtures.
 tags: [fake, fixture, pattern]
 ---
 
-## 1. Опис и Намена
+## 1. Problem & Context
 
-Патернот `fake-pattern` е измислен патерн кој комбинира fake компоненти,
-употребен исклучиво за тестирање.
+The `fake-pattern` pattern is a fake pattern that combines fake components,
+used exclusively for testing.
 
-## 2. Комплетен HTML Маркап
+## 2. Complete HTML Markup
+
+### Base HTML Markup
 
 ```html
 <div data-ln-pattern="fake">
@@ -19,8 +22,20 @@ tags: [fake, fixture, pattern]
 </div>
 ```
 
-## 3. Вклучени Компоненти
+## 3. Included Components
 
-| Компонента | Улога во патернот |
+| Component | Role in the Pattern |
 | --- | --- |
-| `ln-fake` | Главна компонента во патернот |
+| `ln-fake` | Main component in the pattern |
+
+## 4. Data Flow
+
+Not applicable — this is a fixture.
+
+## 5. Common Pitfalls
+
+Not applicable — this is a fixture.
+
+## 6. Related Patterns & Components
+
+Related to [ln-fake](../components/ln-fake.md).

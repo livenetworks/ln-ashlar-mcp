@@ -32,6 +32,10 @@ cp config/jwt.example.json config/jwt.json
 - `config/oauth.json` — веќе постои во репото (не содржи тајни), ги дефинира
   дозволените `redirect_uri` вредности (`allowedRedirects`) и дали се
   дозволени loopback (`localhost`/`127.0.0.1`) редиректи.
+- `config/gemini.json` — конфигурација за `review_plan` алатката (копирај од
+  `config/gemini.example.json`); нема тајни во фајлот — автентикацијата за
+  gemini-cli оди преку gemini-cli-ните сопствени енкриптирани credentials во
+  runner-овиот `HOME` (`~/.gemini/gemini-credentials.json`), не преку овој репо.
 
 ## Стартување
 
@@ -94,6 +98,25 @@ query параметри — само на `/sse` и `/messages`) или как�
 
 - MCP tool `healthcheck` (види `tools/healthcheck.js`), достапен преку
   MCP транспортите откако е воспоставена сесија.
+
+### review_plan
+
+MCP алатка (`tools/review_plan.js`) што праќа план (архитектонски или
+имплементациски) на независен Gemini рецензент преку `gemini-cli`.
+Автентикацијата кон Gemini оди преку gemini-cli-ните сопствени credentials,
+зачувани енкриптирано во runner-овиот HOME (`~/.gemini/gemini-credentials.json`,
+моментално API клуч) — нема тајни ни env варијабли во овој репо. Алатката е
+stateless — повикувачкиот агент ја води јамката: draft → review → revise,
+најмногу 3 итерации; на итерации 2–3 се проследува `previous_feedback`; застани
+на `APPROVE` или итерација 3. Конфигурација: `config/gemini.json` (модел,
+timeout, concurrency, max iterations, изолиран runner `HOME`/`cwd`). Логира:
+api-key id, plan_type, iteration, chars in/out, времетраење, verdict, модел.
+Безбедност: gemini-cli е ограничен на чист текст-влез/текст-излез
+(`coreTools: []`, изолиран `HOME`/празен `cwd`, никогаш `--yolo`). Ревизорот
+има read-only MCP пристап до docs корпусот на истиот сервер (клуч
+`gemini-reviewer`, `review_plan` исклучен од неговите алатки против
+рекурзија); поради ова agentic tool round-trips, серверскиот timeout е 240s
+(`config/gemini.json`, `timeoutMs`).
 
 ## Управување со корисници
 

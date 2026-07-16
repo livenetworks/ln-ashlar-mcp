@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import { randomUUID, createHash } from 'crypto';
 import { secureCompare } from '../middleware/secure-compare.js';
 import { getUsers } from '../middleware/user-store.js';
+import { getBaseUrl } from '../middleware/public-url.js';
 
 // Resolve __dirname for ES module
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +36,30 @@ export const isAllowedRedirect = (uri) => {
 
 // One-time use tracking for authorization codes (jti -> expiry ms)
 const usedAuthCodes = new Map();
+
+// Rotated (invalidated) refresh-token jti -> expiry ms
+const usedRefreshTokens = new Map();
+
+const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Drop expired entries from an in-memory jti->expiry map (bounded memory)
+const pruneExpired = (map) => {
+  const now = Date.now();
+  for (const [jti, expiry] of map) {
+    if (expiry <= now) map.delete(jti);
+  }
+};
+
+// Build the standard token response, including a fresh refresh token
+const issueTokens = (username) => {
+  const access_token = jwt.sign({ clientId: username }, jwtSecret, { expiresIn: '24h' });
+  const refresh_token = jwt.sign(
+    { clientId: username, type: 'refresh', jti: randomUUID() },
+    jwtSecret,
+    { expiresIn: '30d' }
+  );
+  return { access_token, token_type: 'Bearer', expires_in: 86400, refresh_token };
+};
 
 // Simple in-memory rate limiter
 const rateBuckets = new Map(); // key -> { count, resetAt }
@@ -155,8 +180,43 @@ router.post('/authorize', rateLimit(10, 15 * 60 * 1000), (req, res) => {
 router.post('/token', rateLimit(30, 15 * 60 * 1000), (req, res) => {
   const { grant_type, code, redirect_uri, client_id, client_secret, code_verifier } = req.body;
 
-  if (grant_type !== 'authorization_code') {
-    return res.status(400).json({ error: 'unsupported_grant_type', error_description: 'Само authorization_code е поддржан.' });
+  if (grant_type !== 'authorization_code' && grant_type !== 'refresh_token') {
+    return res.status(400).json({ error: 'unsupported_grant_type', error_description: 'Само authorization_code и refresh_token се поддржани.' });
+  }
+
+  if (grant_type === 'refresh_token') {
+    const { refresh_token } = req.body;
+    if (!refresh_token) {
+      return res.status(400).json({ error: 'invalid_request', error_description: 'Недостасува refresh_token.' });
+    }
+    let rPayload;
+    try {
+      rPayload = jwt.verify(refresh_token, jwtSecret);
+    } catch (err) {
+      return res.status(400).json({ error: 'invalid_grant', error_description: 'Истечен или невалиден refresh_token.' });
+    }
+    if (rPayload.type !== 'refresh') {
+      return res.status(400).json({ error: 'invalid_grant', error_description: 'Токенот не е refresh_token.' });
+    }
+    pruneExpired(usedRefreshTokens);
+    if (rPayload.jti && usedRefreshTokens.has(rPayload.jti)) {
+      return res.status(400).json({ error: 'invalid_grant', error_description: 'refresh_token е веќе искористен.' });
+    }
+    let authCfgR;
+    try {
+      authCfgR = getUsers();
+    } catch (e) {
+      return res.status(500).json({ error: 'server_error', error_description: 'Серверска грешка при проверка на корисникот.' });
+    }
+    if (!authCfgR.users[rPayload.clientId]) {
+      return res.status(400).json({ error: 'invalid_grant', error_description: 'Корисникот повеќе не постои.' });
+    }
+    // Rotate: invalidate the presented refresh token, issue a fresh pair
+    if (rPayload.jti) {
+      usedRefreshTokens.set(rPayload.jti, Date.now() + REFRESH_TTL_MS);
+    }
+    if (usedRefreshTokens.size > 10000) pruneExpired(usedRefreshTokens);
+    return res.json(issueTokens(rPayload.clientId));
   }
 
   if (!code) {
@@ -203,17 +263,43 @@ router.post('/token', rateLimit(30, 15 * 60 * 1000), (req, res) => {
       usedAuthCodes.set(payload.jti, now + 5 * 60 * 1000);
     }
 
-    // Generate access token (expires in 24 hours)
-    const access_token = jwt.sign({ clientId: username }, jwtSecret, { expiresIn: '24h' });
-
-    res.json({
-      access_token,
-      token_type: 'Bearer',
-      expires_in: 86400
-    });
+    // Issue access + refresh tokens (access 24h, refresh 30d)
+    res.json(issueTokens(username));
   } catch (err) {
     return res.status(400).json({ error: 'invalid_grant', error_description: 'Истечен или невалиден код за авторизација.' });
   }
+});
+
+// --- OAuth discovery metadata (public, consumed by strict MCP clients) ---
+
+// RFC 8414 — Authorization Server Metadata
+router.get([
+  '/.well-known/oauth-authorization-server',
+  '/.well-known/oauth-authorization-server/*splat'
+], (req, res) => {
+  const base = getBaseUrl(req);
+  res.json({
+    issuer: base,
+    authorization_endpoint: `${base}/authorize`,
+    token_endpoint: `${base}/token`,
+    response_types_supported: ['code'],
+    grant_types_supported: ['authorization_code', 'refresh_token'],
+    code_challenge_methods_supported: ['S256'],
+    token_endpoint_auth_methods_supported: ['none', 'client_secret_post']
+  });
+});
+
+// RFC 9728 — Protected Resource Metadata
+router.get([
+  '/.well-known/oauth-protected-resource',
+  '/.well-known/oauth-protected-resource/*splat'
+], (req, res) => {
+  const base = getBaseUrl(req);
+  res.json({
+    resource: base,
+    authorization_servers: [base],
+    bearer_methods_supported: ['header']
+  });
 });
 
 export default router;

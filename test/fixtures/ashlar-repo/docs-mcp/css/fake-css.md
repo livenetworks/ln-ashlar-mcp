@@ -2,31 +2,37 @@
 name: fake-css
 classification: css
 status: stable
+domain: frontend
 summary: Fake CSS API documentation used for ashlar-docs test fixtures.
 tags: [fake, fixture, css]
 ---
 
-## 1. Опис и Намена
+## 1. Core Behavior & Responsibility
 
-Документ за измислен (fake) SCSS API, употребен исклучиво за тестирање.
+Documentation for a fake SCSS API, used exclusively for testing.
 
-## 2. Примена
+## 2. Minimal HTML Markup & Usage Variants
 
-```scss
-.fake-target {
-  @include fake-mixin(10px);
-}
+### Base HTML Markup
+
+```html
+<div class="fake-target"></div>
 ```
 
-## 3. SCSS API (Миксини, Класи и Токени)
+## 3. SCSS API (Mixins, Classes & Tokens)
 
-| Име | Вид | Параметри / Вредности | Опис |
+| Name | Kind | Parameters / Values | Description |
 | --- | --- | --- | --- |
-| `fake-mixin` | mixin | `$size` | Применува измислено димензионирање |
-| `.fake-class` | класа | — | Измислена помошна класа |
-| `--fake-token` | токен | `10px` | Измислен spacing токен |
-| `data-ln-fake-css` | атрибут | `boolean` | Измислен CSS hook атрибут |
+| `fake-mixin` | mixin | `$size` | Applies fake sizing |
+| `.fake-class` | class | — | Fake helper class |
+| `--fake-token` | token | `10px` | Fake spacing token |
+| `data-ln-fake-css` | attribute | `boolean` | Fake CSS hook attribute |
 
-## 4. Поврзани Документи
+## 4. Accessibility & Common Pitfalls
 
-Поврзано со [ln-fake](../components/ln-fake.md).
+Not applicable — this is a fixture.
+
+## 5. Related Documents
+
+Related to [ln-fake](../components/ln-fake.md) and to a
+[not-yet-authored document](./not-written-yet.md) (dangling, planned).

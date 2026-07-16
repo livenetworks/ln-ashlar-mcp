@@ -10,21 +10,27 @@ export const definition = {
     "Anti-hallucination contract lookup: given a data-ln-* attribute name (e.g. " +
     "'data-ln-toggle-action'), return every component that declares it, with its owning " +
     "element, type/values, default value and description. Use this instead of guessing " +
-    "attribute behavior.",
+    "attribute behavior. Optional 'domain' narrows the result list across corpus roots.",
   inputSchema: {
-    attribute: z.string().describe("Attribute name to look up, e.g. 'data-ln-toggle-action'")
+    attribute: z.string().describe("Attribute name to look up, e.g. 'data-ln-toggle-action'"),
+    domain: z
+      .enum(["frontend", "backend", "process"])
+      .optional()
+      .describe("Narrow results to components in a single domain")
   }
 };
 
-export const handler = async ({ attribute }) => {
+export const handler = async ({ attribute, domain }) => {
   const index = await ensureIndex();
   if (!index) {
     return { content: [{ type: "text", text: notConfiguredMessage() }] };
   }
 
   const key = (attribute ?? "").trim();
-  const matches = index.attributeIndex.get(key);
-  if (!matches || matches.length === 0) {
+  let matches = index.attributeIndex.get(key) || [];
+  if (domain) matches = matches.filter((m) => m.domain === domain);
+
+  if (matches.length === 0) {
     const suggestions = closest(key, Array.from(index.attributeIndex.keys()));
     const suffix = suggestions.length ? ` Closest matches: ${suggestions.join(", ")}` : "";
     return { content: [{ type: "text", text: `Not found: "${attribute}".${suffix}` }] };
@@ -33,10 +39,11 @@ export const handler = async ({ attribute }) => {
   const lines = [
     `Attribute \`${key}\` — ${matches.length} declaration(s):`,
     "",
-    "| Component | Element | Тип / Вредности | Стандардна вредност | Опис |",
-    "| --- | --- | --- | --- | --- |",
+    "| Component | Domain | Element | Type / Values | Default | Description |",
+    "| --- | --- | --- | --- | --- | --- |",
     ...matches.map(
-      (m) => `| ${m.component} | ${m.element ?? ""} | ${m.typeValues ?? ""} | ${m.default ?? ""} | ${m.description ?? ""} |`
+      (m) =>
+        `| ${m.component} | ${m.domain} | ${m.element ?? ""} | ${m.typeValues ?? ""} | ${m.default ?? ""} | ${m.description ?? ""} |`
     )
   ];
 

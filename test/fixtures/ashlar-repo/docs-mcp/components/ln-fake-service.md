@@ -2,19 +2,20 @@
 name: ln-fake-service
 classification: service
 status: stable
+domain: backend
 summary: Fake service component used for ashlar-docs test fixtures.
 tags: [fake, fixture, service]
 source: fake/ln-fake-service.js
 ---
 
-## 1. Опис и Намена
+## 1. Core Behavior & Responsibility
 
-`ln-fake-service` е измислена (fake) сервисна компонента која служи исклучиво
-за тестирање на ashlar-docs алатките. Нема реална имплементација.
+`ln-fake-service` is a fake service component used exclusively for testing
+the ashlar-docs tools. It has no real implementation.
 
-## 2. Минимален HTML Маркап и Варијанти на Употреба
+## 2. Minimal HTML Markup & Usage Variants
 
-### Базен HTML Маркап
+### Base HTML Markup
 
 ```js
 import { lnFakeService } from "ln-ashlar";
@@ -22,7 +23,7 @@ import { lnFakeService } from "ln-ashlar";
 lnFakeService.init();
 ```
 
-### Варијанта 1: Со опции
+### Variant 1: With Options
 
 ```js
 import { lnFakeService } from "ln-ashlar";
@@ -30,33 +31,33 @@ import { lnFakeService } from "ln-ashlar";
 lnFakeService.init({ debug: true });
 ```
 
-## 3. Декларативен API Договор (Атрибути и Настани)
+## 3. Declarative API Contract (Attributes & Events)
 
-### Табела со Атрибути
+### Attributes Table
 
-| Атрибут | Елемент | Тип / Вредности | Стандардна вредност | Опис |
+| Attribute | Element | Type / Values | Default | Description |
 | --- | --- | --- | --- | --- |
-| `data-ln-fake-service` | `div` | `boolean` | `false` | Активира ја fake сервисната компонента |
+| `data-ln-fake-service` | `div` | `boolean` | `false` | Activates the fake service component |
 
-### Настани (Events API)
+### Events API
 
-| Настан | Насока | Cancelable | Опис | `detail` Објект |
+| Event | Direction | Cancelable | Description | `detail` Object |
 | --- | --- | --- | --- | --- |
-| `ln:fake-service:ready` | Емитува | Не | Се емитува кога сервисот е спремен | `{}` |
+| `ln:fake-service:ready` | Emits | No | Emitted when the service is ready | `{}` |
 
-## 4. SCSS / Стилизација
+## 4. CSS Styling & Behavioral Concept
 
-Компонентата не носи сопствен SCSS API во оваа фикстура.
+This fixture carries no own SCSS API.
 
-## 5. JS Однесување
+## 5. Accessibility (ARIA) & Common Pitfalls
 
-Нема реално JS однесување — ова е фикстура.
+Not applicable — this is a background service.
 
-## 6. Поврзани Документи
+## 6. Flow Diagram & Lifecycle
 
-Нема поврзани документи во оваа фикстура.
+No related documents in this fixture.
 
-## 7. Пример за Употреба
+## 7. Related Components
 
 ```js
 import { lnFakeService } from "ln-ashlar";

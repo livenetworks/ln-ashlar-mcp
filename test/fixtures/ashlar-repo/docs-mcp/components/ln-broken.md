@@ -1,40 +1,41 @@
 ---
 name: ln-other
 classification: pattern
-status: stable
+status: bogus
 summary: Broken fixture used to exercise validate_docs problem detection.
 ---
 
-## 1. Опис и Намена
+## 1. Core Behavior & Responsibility
 
-`ln-broken` е измислена компонента со намерно расипани мета-податоци и
-структура, употребена само за тестирање на validate_docs.
+`ln-broken` is a fake component with intentionally broken metadata and
+structure, used only for testing validate_docs.
 
-## 2. Минимален HTML Маркап и Варијанти на Употреба
+## 2. Minimal HTML Markup & Usage Variants
 
-### Базен HTML Маркап
+### Base HTML Markup
 
 ```html
 <div data-ln-broken="true"></div>
 ```
 
-## 3. Декларативен API Договор (Атрибути и Настани)
+## 3. Declarative API Contract (Attributes & Events)
 
-### Табела со Атрибути
+### Attributes Table
 
-| Attr | Опис |
+| Attr | Description |
 | --- | --- |
-| `data-ln-broken` | Намерно погрешни колони за тестирање |
+| `data-ln-broken` | Intentionally wrong columns for testing |
 
-## 4. SCSS / Стилизација
+## 4. CSS Styling & Behavioral Concept
 
-Нема сопствен SCSS API во оваа фикстура.
+No own SCSS API in this fixture.
 
-## 6. Поврзани Документи
+## 6. Flow Diagram & Lifecycle
 
-Содржи расипан линк кон [непостоечки документ](./does-not-exist.md).
+Contains a dangling link to a [not-yet-authored document](./does-not-exist.md)
+— valid, planned; no longer a validation finding.
 
-## 7. Пример за Употреба
+## 7. Related Components
 
 ```html
 <div data-ln-broken="true"></div>

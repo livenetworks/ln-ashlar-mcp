@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "lint:docs": "node tools/ashlar/lint-cli.js"
   },
   "keywords": [],
   "author": "",

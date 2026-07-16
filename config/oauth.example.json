@@ -1,0 +1,8 @@
+{
+	"allowedRedirects": [
+		"https://claude.ai/api/mcp/auth_callback",
+		"https://claude.com/api/mcp/auth_callback"
+	],
+	"allowLoopbackRedirects": true,
+	"publicBaseUrl": "https://mcp.example.com"
+}

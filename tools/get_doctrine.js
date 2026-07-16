@@ -1,42 +1,53 @@
 import { z } from "zod";
 import { ensureIndex, notConfiguredMessage } from "./ashlar/corpus.js";
 import { closest } from "./ashlar/similar.js";
+import { renderAmbiguous } from "./ashlar/resolve.js";
 
 export const name = "get_doctrine";
 
 export const definition = {
   title: "Get Doctrine",
   description:
-    "Without 'topic': list all doctrine/ and guides/ documents (name, status, summary). " +
-    "With 'topic': return the full markdown of the best-matching doctrine/guide document, " +
-    "matched by name, tags, summary, then full-text search.",
+    "Without 'topic': list all doctrine/ and guides/ documents (name, status, summary), across " +
+    "all configured corpus roots. With 'topic': return the full markdown of the best-matching " +
+    "doctrine/guide document, matched by name, tags, summary, then full-text search. Optional " +
+    "'domain' scopes the lookup; an exact-name match that is still ambiguous across roots " +
+    "returns a disambiguation listing instead of guessing.",
   inputSchema: {
-    topic: z.string().optional().describe("Topic keyword to search for among doctrine/guide docs")
+    topic: z.string().optional().describe("Topic keyword to search for among doctrine/guide docs"),
+    domain: z.enum(["frontend", "backend", "process"]).optional().describe("Scope the lookup to a single domain")
   }
 };
 
-export const handler = async ({ topic } = {}) => {
+export const handler = async ({ topic, domain } = {}) => {
   const index = await ensureIndex();
   if (!index) {
     return { content: [{ type: "text", text: notConfiguredMessage() }] };
   }
 
-  const scope = index.registry.filter((d) => d.folder === "doctrine" || d.folder === "guides");
+  let scope = Array.from(index.docs.values()).filter((d) => d.folder === "doctrine" || d.folder === "guides");
+  if (domain) scope = scope.filter((d) => d.domain === domain);
 
   if (!topic) {
     if (scope.length === 0) {
       return { content: [{ type: "text", text: "No doctrine/guide documents indexed." }] };
     }
     const lines = [
-      "| Name | Status | Summary |",
-      "| --- | --- | --- |",
-      ...scope.map((d) => `| ${d.name} | ${d.status ?? ""} | ${d.summary ?? ""} |`)
+      "| Name | Status | Domain | Summary |",
+      "| --- | --- | --- | --- |",
+      ...scope.map((d) => `| ${d.name} | ${d.status ?? ""} | ${d.domain} | ${d.summary ?? ""} |`)
     ];
     return { content: [{ type: "text", text: lines.join("\n") }] };
   }
 
   const lower = topic.toLowerCase();
-  let best = scope.find((d) => d.name.toLowerCase() === lower);
+  const exactMatches = scope.filter((d) => d.name.toLowerCase() === lower);
+
+  if (exactMatches.length > 1) {
+    return { content: [{ type: "text", text: renderAmbiguous(topic, exactMatches) }] };
+  }
+
+  let best = exactMatches[0];
 
   if (!best) {
     best = scope.find((d) => (d.tags || []).some((t) => t.toLowerCase().includes(lower)));
@@ -47,10 +58,10 @@ export const handler = async ({ topic } = {}) => {
   }
 
   if (!best) {
-    const scopeNames = new Set(scope.map((d) => d.name));
+    const scopeKeys = new Set(scope.map((d) => d.key));
     const fuseResults = index.fuse.search(topic);
-    const hit = fuseResults.find((r) => scopeNames.has(r.item.doc));
-    if (hit) best = scope.find((d) => d.name === hit.item.doc);
+    const hit = fuseResults.find((r) => scopeKeys.has(r.item.key));
+    if (hit) best = scope.find((d) => d.key === hit.item.key);
   }
 
   if (!best) {
@@ -59,6 +70,5 @@ export const handler = async ({ topic } = {}) => {
     return { content: [{ type: "text", text: `Not found: "${topic}".${suffix}` }] };
   }
 
-  const doc = index.docs.get(best.name);
-  return { content: [{ type: "text", text: doc.raw }] };
+  return { content: [{ type: "text", text: best.raw }] };
 };

@@ -2,25 +2,26 @@
 name: ln-fake
 classification: simple
 status: stable
+domain: frontend
 summary: Fake simple component used for ashlar-docs test fixtures.
 tags: [fake, fixture, simple]
 source: fake/ln-fake.js
 ---
 
-## 1. Опис и Намена
+## 1. Core Behavior & Responsibility
 
-`ln-fake` е измислена (fake) едноставна компонента која служи исклучиво за
-тестирање на ashlar-docs алатките. Нема реална имплементација.
+`ln-fake` is a fake simple component used exclusively for testing the
+ashlar-docs tools. It has no real implementation.
 
-## 2. Минимален HTML Маркап и Варијанти на Употреба
+## 2. Minimal HTML Markup & Usage Variants
 
-### Базен HTML Маркап
+### Base HTML Markup
 
 ```html
 <div data-ln-fake="true"></div>
 ```
 
-### Варијанта 1: Со икона
+### Variant 1: With Icon
 
 ```html
 <div data-ln-fake="true" data-ln-fake-action="alert">
@@ -28,43 +29,43 @@ source: fake/ln-fake.js
 </div>
 ```
 
-### Варијанта 2: Без икона
+### Variant 2: Without Icon
 
 ```html
 <div data-ln-fake="true"></div>
 ```
 
-## 3. Декларативен API Договор (Атрибути и Настани)
+## 3. Declarative API Contract (Attributes & Events)
 
-### Табела со Атрибути
+### Attributes Table
 
-| Атрибут | Елемент | Тип / Вредности | Стандардна вредност | Опис |
+| Attribute | Element | Type / Values | Default | Description |
 | --- | --- | --- | --- | --- |
-| `data-ln-fake` | `div` | `boolean` | `false` | Активира ја fake компонентата |
-| `data-ln-fake-action` | `div` | `alert\|none` | `none` | Акција што се извршува при клик |
-| `data-ln-fake-target` | `div` | `string` (id) | — | Целен елемент за акцијата |
+| `data-ln-fake` | `div` | `boolean` | `false` | Activates the fake component |
+| `data-ln-fake-action` | `div` | `alert\|none` | `none` | Action executed on click |
+| `data-ln-fake-target` | `div` | `string` (id) | — | Target element for the action |
 
-### Настани (Events API)
+### Events API
 
-| Настан | Насока | Cancelable | Опис | `detail` Објект |
+| Event | Direction | Cancelable | Description | `detail` Object |
 | --- | --- | --- | --- | --- |
-| `ln:fake:activate` | Емитува | Да | Се емитува при активација на компонентата | `{ id: string }` |
-| `ln:fake:refresh` | Слуша | Не | Се слуша за надворешно барање за освежување | `{}` |
+| `ln:fake:activate` | Emits | Yes | Emitted when the component is activated | `{ id: string }` |
+| `ln:fake:refresh` | Listens | No | Listened for an external refresh request | `{}` |
 
-## 4. SCSS / Стилизација
+## 4. CSS Styling & Behavioral Concept
 
-Компонентата не носи сопствен SCSS API во оваа фикстура.
+This fixture carries no own SCSS API.
 
-## 5. JS Однесување
+## 5. Accessibility (ARIA) & Common Pitfalls
 
-Нема реално JS однесување — ова е фикстура.
+No real accessibility behavior — this is a fixture.
 
-## 6. Поврзани Документи
-
-Поврзано со [ln-broken](./ln-broken.md) и со [fake-css](../css/fake-css.md).
-
-## 7. Пример за Употреба
+## 6. Flow Diagram & Lifecycle
 
 ```html
 <div data-ln-fake="true" data-ln-fake-action="alert"></div>
 ```
+
+## 7. Related Components
+
+Related to [ln-broken](./ln-broken.md) and to [fake-css](../css/fake-css.md).

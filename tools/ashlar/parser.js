@@ -2,6 +2,10 @@
 // Pure markdown documentation parser for the ln-ashlar docs-mcp corpus.
 // No filesystem access here — parseDoc() takes markdown text and returns
 // structured data (sections, attribute/event tables, markup blocks, links).
+//
+// Contract (English, 2026-07-11 decision): all normative headings/tables are
+// authored in English. See resources/ln-ashlar/docs-mcp/README.md +
+// _templates/*.md — those templates are authoritative.
 
 import { parseFrontmatter } from './frontmatter.js';
 
@@ -74,7 +78,7 @@ function sectionEnd(headings, idx, lines) {
 }
 
 /**
- * Build the flat sections array (one entry per heading).
+ * Build the flat sections array (one entry per heading, both `##` and `###`).
  * @param {string[]} lines
  * @param {Array} headings
  * @returns {Array}
@@ -107,6 +111,9 @@ function isSeparatorRow(line) {
 
 /**
  * Split a raw table row line into trimmed cell strings (outer pipes removed).
+ * Only a whole-cell-wrapping outer pair of backticks is stripped here — a
+ * cell like `` `detail` Object `` (backticks around just part of the text)
+ * is left intact, since the normative Events header cell is exactly that.
  * @param {string} line
  * @returns {string[]}
  */
@@ -128,7 +135,7 @@ function findTableInRange(lines, start, end) {
   for (let i = start; i < end; i++) {
     if (!lines[i].trim().startsWith('|')) continue;
     if (i + 1 >= end || !isSeparatorRow(lines[i + 1])) continue;
-    const columns = splitTableRow(lines[i]).map((c) => stripAllBackticks(c));
+    const columns = splitTableRow(lines[i]);
     const rows = [];
     let j = i + 2;
     while (j < end && lines[j].trim().startsWith('|')) {
@@ -152,8 +159,10 @@ export function parseTable(lines) {
 }
 
 /**
- * Find the heading (by `title`, i.e. leading `N. ` stripped) and extract its
- * first pipe table, mapped through rowMapper.
+ * Find a heading (by `title`, i.e. leading `N. ` stripped) at any level and
+ * extract its first pipe table, mapped through rowMapper. Used for tables
+ * that live directly under a `##` section (css SCSS API, pattern Included
+ * Components) with no intervening `###` subheading.
  * @param {string[]} lines
  * @param {Array} headings
  * @param {string} title
@@ -165,6 +174,40 @@ function extractTableSection(lines, headings, title, rowMapper) {
   if (idx === -1) return [];
   const start = headings[idx].lineIndex + 1;
   const end = sectionEnd(headings, idx, lines);
+  const table = findTableInRange(lines, start, end);
+  if (!table) return [];
+  return table.rows.map(rowMapper);
+}
+
+/**
+ * Find a `###` subheading (by title) nested under a specific `##` section
+ * (by title) and extract its first pipe table. Used for the components §3
+ * tables, which now live under explicit `### Attributes Table` /
+ * `### Events API` subheadings rather than being located by column signature.
+ * @param {string[]} lines
+ * @param {Array} headings
+ * @param {string} level2Title
+ * @param {string} level3Title
+ * @param {(row:string[]) => Object} rowMapper
+ * @returns {Object[]}
+ */
+function extractTableUnderSubheading(lines, headings, level2Title, level3Title, rowMapper) {
+  const parentIdx = headings.findIndex((h) => h.level === 2 && h.title === level2Title);
+  if (parentIdx === -1) return [];
+  const parentEnd = sectionEnd(headings, parentIdx, lines);
+
+  let subIdx = -1;
+  for (let k = parentIdx + 1; k < headings.length; k++) {
+    if (headings[k].lineIndex >= parentEnd) break;
+    if (headings[k].level === 3 && headings[k].title === level3Title) {
+      subIdx = k;
+      break;
+    }
+  }
+  if (subIdx === -1) return [];
+
+  const start = headings[subIdx].lineIndex + 1;
+  const end = Math.min(sectionEnd(headings, subIdx, lines), parentEnd);
   const table = findTableInRange(lines, start, end);
   if (!table) return [];
   return table.rows.map(rowMapper);
@@ -219,8 +262,8 @@ function joinBlocks(blocks) {
 }
 
 /**
- * Extract the base markup + variants from the "Минимален HTML Маркап и
- * Варијанти на Употреба" (components) or "Комплетен HTML Маркап" (patterns)
+ * Extract the base markup + variants from the "Minimal HTML Markup & Usage
+ * Variants" (components/css) or "Complete HTML Markup" (patterns) §2
  * section. Components with `classification: service` use ```js blocks under
  * the same frozen subheadings instead of ```html.
  * @param {string[]} lines
@@ -232,8 +275,7 @@ function extractMarkup(lines, headings, allowedLangs) {
   const secIdx = headings.findIndex(
     (h) =>
       h.level === 2 &&
-      (h.title === 'Минимален HTML Маркап и Варијанти на Употреба' ||
-        h.title === 'Комплетен HTML Маркап')
+      (h.title === 'Minimal HTML Markup & Usage Variants' || h.title === 'Complete HTML Markup')
   );
   if (secIdx === -1) return { base: null, variants: [] };
 
@@ -258,10 +300,10 @@ function extractMarkup(lines, headings, allowedLangs) {
     const subEnd = Math.min(sectionEnd(headings, hIdx, lines), end);
     const blocks = extractFencedBlocks(lines, subStart, subEnd, allowedLangs);
     const title = headings[hIdx].title;
-    if (title === 'Базен HTML Маркап') {
+    if (title === 'Base HTML Markup') {
       const joined = joinBlocks(blocks);
       if (joined) base = joined;
-    } else if (/^Варијанта\s+\d+:/.test(title)) {
+    } else if (/^Variant\s+\d+:/.test(title)) {
       const joined = joinBlocks(blocks);
       variants.push({ title, code: joined ? joined.code : '', lang: joined ? joined.lang : 'html' });
     }
@@ -271,7 +313,9 @@ function extractMarkup(lines, headings, allowedLangs) {
 
 /**
  * Extract relative markdown links (`./x.md`, `../folder/y.md#frag`) from the
- * document body, ignoring links inside fenced code blocks.
+ * document body, ignoring links inside fenced code blocks. Malformed link
+ * targets (anything not matching the relative-.md shape) are simply ignored,
+ * not reported.
  * @param {string[]} lines
  * @returns {string[]}
  */
@@ -315,35 +359,42 @@ export function parseDoc(markdown, meta = {}) {
   const headings = computeHeadings(lines);
   const sections = buildSections(lines, headings);
 
-  const attributes = extractTableSection(lines, headings, 'Табела со Атрибути', (r) => ({
-    attribute: stripAllBackticks(r[0]),
-    element: r[1],
-    typeValues: r[2],
-    default: r[3],
-    description: r[4]
-  }));
-
-  const events = extractTableSection(lines, headings, 'Настани (Events API)', (r) => ({
-    event: stripAllBackticks(r[0]),
-    direction: r[1],
-    cancelable: r[2],
-    description: r[3],
-    detail: r[4]
-  }));
-
-  const scssApi = extractTableSection(
+  const attributes = extractTableUnderSubheading(
     lines,
     headings,
-    'SCSS API (Миксини, Класи и Токени)',
+    'Declarative API Contract (Attributes & Events)',
+    'Attributes Table',
     (r) => ({
-      name: stripAllBackticks(r[0]),
-      kind: r[1],
-      params: r[2],
-      description: r[3]
+      attribute: stripAllBackticks(r[0]),
+      element: r[1],
+      typeValues: r[2],
+      default: r[3],
+      description: r[4]
     })
   );
 
-  const includedComponents = extractTableSection(lines, headings, 'Вклучени Компоненти', (r) => ({
+  const events = extractTableUnderSubheading(
+    lines,
+    headings,
+    'Declarative API Contract (Attributes & Events)',
+    'Events API',
+    (r) => ({
+      event: stripAllBackticks(r[0]),
+      direction: r[1],
+      cancelable: r[2],
+      description: r[3],
+      detail: r[4]
+    })
+  );
+
+  const scssApi = extractTableSection(lines, headings, 'SCSS API (Mixins, Classes & Tokens)', (r) => ({
+    name: stripAllBackticks(r[0]),
+    kind: r[1],
+    params: r[2],
+    description: r[3]
+  }));
+
+  const includedComponents = extractTableSection(lines, headings, 'Included Components', (r) => ({
     component: stripAllBackticks(r[0]),
     role: r[1]
   }));

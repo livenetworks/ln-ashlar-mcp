@@ -2,48 +2,49 @@
 name: ln-nohtml
 classification: simple
 status: stable
+domain: frontend
 summary: Fake simple component with no html block in §2, used for ashlar-docs test fixtures.
 tags: [fake, fixture, simple]
 source: fake/ln-nohtml.js
 ---
 
-## 1. Опис и Намена
+## 1. Core Behavior & Responsibility
 
-`ln-nohtml` е измислена (fake) едноставна компонента која служи исклучиво за
-тестирање на ashlar-docs алатките. Нема реална имплементација.
+`ln-nohtml` is a fake simple component used exclusively for testing the
+ashlar-docs tools. It has no real implementation.
 
-## 2. Минимален HTML Маркап и Варијанти на Употреба
+## 2. Minimal HTML Markup & Usage Variants
 
-### Базен HTML Маркап
+### Base HTML Markup
 
-Оваа компонента намерно нема html блок во §2, за тестирање на validate_docs.
+This component intentionally has no html block in §2, to test validate_docs.
 
-## 3. Декларативен API Договор (Атрибути и Настани)
+## 3. Declarative API Contract (Attributes & Events)
 
-### Табела со Атрибути
+### Attributes Table
 
-| Атрибут | Елемент | Тип / Вредности | Стандардна вредност | Опис |
+| Attribute | Element | Type / Values | Default | Description |
 | --- | --- | --- | --- | --- |
-| `data-ln-nohtml` | `div` | `boolean` | `false` | Активира ја fake компонентата |
+| `data-ln-nohtml` | `div` | `boolean` | `false` | Activates the fake component |
 
-### Настани (Events API)
+### Events API
 
-| Настан | Насока | Cancelable | Опис | `detail` Објект |
+| Event | Direction | Cancelable | Description | `detail` Object |
 | --- | --- | --- | --- | --- |
-| `ln:nohtml:activate` | Емитува | Не | Се емитува при активација на компонентата | `{}` |
+| `ln:nohtml:activate` | Emits | No | Emitted when the component is activated | `{}` |
 
-## 4. SCSS / Стилизација
+## 4. CSS Styling & Behavioral Concept
 
-Компонентата не носи сопствен SCSS API во оваа фикстура.
+This fixture carries no own SCSS API.
 
-## 5. JS Однесување
+## 5. Accessibility (ARIA) & Common Pitfalls
 
-Нема реално JS однесување — ова е фикстура.
+Not applicable — this is a fixture.
 
-## 6. Поврзани Документи
+## 6. Flow Diagram & Lifecycle
 
-Нема поврзани документи во оваа фикстура.
+No related documents in this fixture.
 
-## 7. Пример за Употреба
+## 7. Related Components
 
-Нема пример за употреба во оваа фикстура.
+No usage example in this fixture.

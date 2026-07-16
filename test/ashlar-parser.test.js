@@ -36,6 +36,12 @@ describe("parseFrontmatter", () => {
     const { data } = parseFrontmatter(md);
     assert.equal(data.summary, "quoted value");
   });
+
+  test("source may be a block list (array support)", () => {
+    const md = "---\nsource:\n  - js/ln-fake/a.js\n  - js/ln-fake/b.js\n---\nBody";
+    const { data } = parseFrontmatter(md);
+    assert.deepEqual(data.source, ["js/ln-fake/a.js", "js/ln-fake/b.js"]);
+  });
 });
 
 describe("parseDoc — section splitting", () => {
@@ -63,26 +69,33 @@ describe("parseDoc — section splitting", () => {
     assert.equal(second.number, 2);
     assert.equal(second.text, "Text two.");
   });
+
+  test("guide/doctrine/skill: '## Summary' is detected as the first top-level section", () => {
+    const md = ["## Summary", "", "2-3 sentences.", "", "---", "", "Free-form body."].join("\n");
+    const { sections } = parseDoc(md);
+    const top = sections.filter((s) => s.level === 2);
+    assert.equal(top[0].title, "Summary");
+  });
 });
 
 describe("parseDoc — markup extraction", () => {
   test("extracts base markup and variants", () => {
     const md = [
-      "## 2. Минимален HTML Маркап и Варијанти на Употреба",
+      "## 2. Minimal HTML Markup & Usage Variants",
       "",
-      "### Базен HTML Маркап",
+      "### Base HTML Markup",
       "",
       "```html",
       "<div data-ln-fake=\"true\"></div>",
       "```",
       "",
-      "### Варијанта 1: Со икона",
+      "### Variant 1: With Icon",
       "",
       "```html",
       "<div data-ln-fake=\"true\"><i></i></div>",
       "```",
       "",
-      "### Варијанта 2: Без икона",
+      "### Variant 2: Without Icon",
       "",
       "```html",
       "<div data-ln-fake=\"true\"></div>",
@@ -93,14 +106,14 @@ describe("parseDoc — markup extraction", () => {
     assert.equal(markup.base.code, '<div data-ln-fake="true"></div>');
     assert.equal(markup.base.lang, "html");
     assert.equal(markup.variants.length, 2);
-    assert.equal(markup.variants[0].title, "Варијанта 1: Со икона");
+    assert.equal(markup.variants[0].title, "Variant 1: With Icon");
     assert.equal(markup.variants[0].lang, "html");
     assert.match(markup.variants[0].code, /<i><\/i>/);
   });
 
   test("treats a single html block with no ### subheadings as base", () => {
     const md = [
-      "## 2. Комплетен HTML Маркап",
+      "## 2. Complete HTML Markup",
       "",
       "```html",
       "<div data-ln-pattern=\"fake\"></div>",
@@ -118,15 +131,15 @@ describe("parseDoc — markup extraction", () => {
       "---",
       "classification: service",
       "---",
-      "## 2. Минимален HTML Маркап и Варијанти на Употреба",
+      "## 2. Minimal HTML Markup & Usage Variants",
       "",
-      "### Базен HTML Маркап",
+      "### Base HTML Markup",
       "",
       "```js",
       "import { lnFake } from \"ln-ashlar\";",
       "```",
       "",
-      "### Варијанта 1: Со опции",
+      "### Variant 1: With Options",
       "",
       "```javascript",
       "lnFake.init({ debug: true });",
@@ -143,9 +156,9 @@ describe("parseDoc — markup extraction", () => {
 
   test("a js block in a NON-service doc's §2 is ignored by the parser", () => {
     const md = [
-      "## 2. Минимален HTML Маркап и Варијанти на Употреба",
+      "## 2. Minimal HTML Markup & Usage Variants",
       "",
-      "### Базен HTML Маркап",
+      "### Base HTML Markup",
       "",
       "```js",
       "shouldBeIgnored();",
@@ -158,49 +171,64 @@ describe("parseDoc — markup extraction", () => {
   });
 });
 
-describe("parseDoc — table extraction", () => {
-  test("extracts attribute table rows", () => {
+describe("parseDoc — table extraction (English contract, subheading-located)", () => {
+  test("extracts attribute table rows located under '### Attributes Table' inside §3", () => {
     const md = [
-      "## 3. Декларативен API Договор (Атрибути и Настани)",
+      "## 3. Declarative API Contract (Attributes & Events)",
       "",
-      "### Табела со Атрибути",
+      "### Attributes Table",
       "",
-      "| Атрибут | Елемент | Тип / Вредности | Стандардна вредност | Опис |",
+      "| Attribute | Element | Type / Values | Default | Description |",
       "| --- | --- | --- | --- | --- |",
-      "| `data-ln-fake-action` | `div` | `string` | `none` | Акција при клик |"
+      "| `data-ln-fake-action` | `div` | `string` | `none` | Action on click |"
     ].join("\n");
 
     const { attributes } = parseDoc(md);
     assert.equal(attributes.length, 1);
     assert.equal(attributes[0].attribute, "data-ln-fake-action");
     assert.equal(attributes[0].element, "div");
-    assert.equal(attributes[0].description, "Акција при клик");
+    assert.equal(attributes[0].description, "Action on click");
   });
 
-  test("extracts events table rows with direction", () => {
+  test("extracts events table rows located under '### Events API' inside §3, with Emits/Listens direction", () => {
     const md = [
-      "## 3. Декларативен API Договор (Атрибути и Настани)",
+      "## 3. Declarative API Contract (Attributes & Events)",
       "",
-      "### Настани (Events API)",
+      "### Events API",
       "",
-      "| Настан | Насока | Cancelable | Опис | `detail` Објект |",
+      "| Event | Direction | Cancelable | Description | `detail` Object |",
       "| --- | --- | --- | --- | --- |",
-      "| `ln:fake:activate` | Емитува | Да | Fires on activate | `{ id }` |",
-      "| `ln:fake:refresh` | Слуша | Не | Listens for refresh | `{}` |"
+      "| `ln:fake:activate` | Emits | Yes | Fires on activate | `{ id }` |",
+      "| `ln:fake:refresh` | Listens | No | Listens for refresh | `{}` |"
     ].join("\n");
 
     const { events } = parseDoc(md);
     assert.equal(events.length, 2);
     assert.equal(events[0].event, "ln:fake:activate");
-    assert.equal(events[0].direction, "Емитува");
-    assert.equal(events[1].direction, "Слуша");
+    assert.equal(events[0].direction, "Emits");
+    assert.equal(events[1].direction, "Listens");
+  });
+
+  test("attributes/events tables outside §3 (no matching parent §2 title) are not extracted", () => {
+    const md = [
+      "## 3. Something Else Entirely",
+      "",
+      "### Attributes Table",
+      "",
+      "| Attribute | Element | Type / Values | Default | Description |",
+      "| --- | --- | --- | --- | --- |",
+      "| `data-ln-x` | `div` | `string` | `none` | Should not be picked up |"
+    ].join("\n");
+
+    const { attributes } = parseDoc(md);
+    assert.equal(attributes.length, 0);
   });
 
   test("extracts scss api table rows", () => {
     const md = [
-      "## 3. SCSS API (Миксини, Класи и Токени)",
+      "## 3. SCSS API (Mixins, Classes & Tokens)",
       "",
-      "| Име | Вид | Параметри / Вредности | Опис |",
+      "| Name | Kind | Parameters / Values | Description |",
       "| --- | --- | --- | --- |",
       "| `fake-mixin` | mixin | `$size` | Applies sizing |"
     ].join("\n");
@@ -213,11 +241,11 @@ describe("parseDoc — table extraction", () => {
 
   test("extracts included-components table rows", () => {
     const md = [
-      "## 3. Вклучени Компоненти",
+      "## 3. Included Components",
       "",
-      "| Компонента | Улога во патернот |",
+      "| Component | Role in the Pattern |",
       "| --- | --- |",
-      "| `ln-fake` | Главна компонента |"
+      "| `ln-fake` | Main component |"
     ].join("\n");
 
     const { includedComponents } = parseDoc(md);
@@ -230,6 +258,20 @@ describe("parseDoc — table extraction", () => {
     const { columns, rows } = parseTable(lines);
     assert.deepEqual(columns, ["A", "B"]);
     assert.deepEqual(rows, [["1", "2"]]);
+  });
+
+  test("Events header cell keeps its backticks: '`detail` Object'", () => {
+    const md = [
+      "## 3. Declarative API Contract (Attributes & Events)",
+      "",
+      "### Events API",
+      "",
+      "| Event | Direction | Cancelable | Description | `detail` Object |",
+      "| --- | --- | --- | --- | --- |",
+      "| `ln:x:y` | Emits | No | . | `{}` |"
+    ].join("\n");
+    const { columns } = parseTable(md.split("\n").slice(4));
+    assert.equal(columns[4], "`detail` Object");
   });
 });
 

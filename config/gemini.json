@@ -1,0 +1,10 @@
+{
+	"model": "gemini-2.5-flash",
+	"timeoutMs": 240000,
+	"concurrency": 2,
+	"maxIterations": 3,
+	"geminiBin": "gemini",
+	"geminiHome": "/home/mcp",
+	"geminiCwd": "/home/mcp/gemini-work",
+	"maxOutputBytes": 1048576
+}
