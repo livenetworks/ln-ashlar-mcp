@@ -18,7 +18,9 @@ export const definition = {
 };
 
 export const handler = async ({ component_name }) => {
-	const schemaPath = path.resolve("tools/snippets/schemas/ln-ashlar-attributes-schema.json");
+	const ashlarSchemaPath = path.resolve("resources/ln-ashlar/docs-mcp/schemas/ln-ashlar-attributes-schema.json");
+	const fallbackSchemaPath = path.resolve("tools/snippets/schemas/ln-ashlar-attributes-schema.json");
+	const schemaPath = fs.existsSync(ashlarSchemaPath) ? ashlarSchemaPath : fallbackSchemaPath;
 	
 	if (!fs.existsSync(schemaPath)) {
 		return {
