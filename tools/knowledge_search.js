@@ -5,7 +5,7 @@ export const name = "knowledge_search";
 
 export const definition = {
   title: "Knowledge Search",
-  description: "Search project documentation and knowledge files for ln-ashlar",
+  description: "MANDATORY ARCHITECTURE SEARCH: Search official project documentation, layer 1/layer 2 coordinators, mixins, and knowledge files for ln-ashlar. Call this before answering component architecture questions.",
   inputSchema: {
     q: z.string().describe("Search query term"),
     limit: z.number().optional().describe("Maximum number of results to return (default 10)")
