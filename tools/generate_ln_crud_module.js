@@ -4,6 +4,7 @@ import { handler as coordHandler } from "./generate_ln_data_coordinator.js";
 import { handler as tableHandler } from "./generate_ln_table.js";
 import { handler as modalHandler } from "./generate_ln_modal.js";
 import { handler as dictHandler } from "./generate_ln_dictionary.js";
+import { handler as emptyHandler } from "./generate_ln_empty_state.js";
 
 export const name = "generate_ln_crud_module";
 
@@ -11,8 +12,8 @@ export const definition = {
 	title: "Generate ln-ashlar Full CRUD Module",
 	description:
 		"Генерира комплетен Local-First CRUD модул во еден фајл/снипет. " +
-		"Интелигентно ги комбинира: Data Coordinator, Data Table, Search & Filter Popover, " +
-		"Modal со Form (<form data-ln-form data-ln-form-scope='resource'>) и Dictionary за известувања.",
+		"Интелигентно ги комбинира: Data Coordinator, Data Table (со data-ln-field и row actions), " +
+		"Search & Filter Popover, Empty State, Modal со Form (<form data-ln-form data-ln-form-scope='resource'>) и Dictionary.",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за модулот (на пр. 'users-module')"),
 		resource: z.string().describe("Име на ресурсот/ентитетот (на пр. 'users', 'products', 'documents')"),
@@ -69,18 +70,29 @@ export const handler = async ({
 	});
 	const dictHtml = dictRes.content[0].text.replace(/```html\n|\n```/g, "");
 
-	// 2. Генерирање на Data Table
+	// 2. Генерирање на Data Table со data-ln-field и row actions
 	const tableRes = await tableHandler({
 		id: `${id}-table`,
 		name: resource,
 		mode: "data-driven",
 		source: resource,
 		selectable: true,
+		actions: true,
 		columns
 	});
 	const tableHtml = tableRes.content[0].text.replace(/```html\n|\n```/g, "");
 
-	// 3. Генерирање на Modal со Форма (со точен resource scope)
+	// 3. Генерирање на Empty State за кога нема податоци
+	const emptyRes = await emptyHandler({
+		id: `${id}-empty`,
+		title: `Нема пронајдено ${resource_title.toLowerCase()}`,
+		description: `Се уште ги немате внесено вашите ${resource_title.toLowerCase()}. Кликнете подолу за да додадете.`,
+		action_label: `Додај ${resource_singular}`,
+		action_modal_id: `${id}-modal`
+	});
+	const emptyHtml = emptyRes.content[0].text.replace(/```html\n|\n```/g, "");
+
+	// 4. Генерирање на Modal со Форма (со точен resource scope)
 	const modalRes = await modalHandler({
 		id: `${id}-modal`,
 		resource,
@@ -95,17 +107,20 @@ export const handler = async ({
 	});
 	const modalHtml = modalRes.content[0].text.replace(/```html\n|\n```/g, "");
 
-	// 4. Комбинирање на содржината внатре во Data Coordinator-от
+	// 5. Комбинирање на содржината внатре во Data Coordinator-от
 	const innerHtml = `
 ${dictHtml}
 
 	<!-- Data Table Component -->
 ${tableHtml}
 
+	<!-- Empty State Component (се прикажува кога нема записи) -->
+${emptyHtml}
+
 	<!-- Modal Component со Форма -->
 ${modalHtml}`;
 
-	// 5. Генерирање на Data Coordinator
+	// 6. Генерирање на Data Coordinator
 	const coordRes = await coordHandler({
 		id: `${id}-coordinator`,
 		resource,
@@ -115,7 +130,7 @@ ${modalHtml}`;
 	});
 	const coordHtml = coordRes.content[0].text.replace(/```html\n|\n```/g, "");
 
-	// 6. Финално склопување во модулот
+	// 7. Финално склопување во модулот
 	const htmlOutput = compileTemplate(
 		moduleTpl,
 		{

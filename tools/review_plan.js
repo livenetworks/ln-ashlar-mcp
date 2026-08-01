@@ -48,7 +48,10 @@ export const definition = {
 	title: "Review Plan",
 	description:
 		"Submit a plan (architecture spec OR implementation/executor plan) to an " +
-		"independent Gemini reviewer for critique. Stateless — YOU drive the loop. " +
+		"independent Gemini reviewer for critique. USE PROACTIVELY: whenever you " +
+		"have drafted a plan for the user, submit it here for independent review " +
+		"BEFORE presenting it as final — do not wait to be asked. " +
+		"Stateless — YOU drive the loop. " +
 		"Protocol: (1) call with your `plan` and `plan_type`; (2) read the returned " +
 		"critique (a Verdict of APPROVE or REVISE, plus numbered issues); (3) if " +
 		"REVISE, revise your plan and call again with `iteration` incremented AND " +

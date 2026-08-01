@@ -7,13 +7,14 @@ export const definition = {
 	title: "Generate ln-ashlar Table",
 	description:
 		"Генерира ln-ashlar табела во SSR или Data-Driven режим од темплејтот во _src/tables/table.html. " +
-		"Поддржува колони за селекција, сортирање, филтрирање со popover и <template> редови за клиентски рендер.",
+		"Поддржува колони за селекција, сортирање, филтрирање со popover, data-ln-field врски и <template> редови со дејства (edit/delete).",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за контејнерот на табелата"),
 		name: z.string().describe("Име на ентитетот за data-ln-table (на пр. 'products')"),
 		mode: z.enum(["ssr", "data-driven"]).default("data-driven").describe("Режим на работа"),
 		source: z.string().optional().describe("Име на ресурсот/моделот за data-ln-table-source"),
 		selectable: z.boolean().default(false).describe("Дали има колона за избор со чекбокс"),
+		actions: z.boolean().default(true).describe("Дали да содржи колона за дејства (уредување/бришење)"),
 		windowed: z.number().optional().describe("Број на ставки за виртуелизација (data-ln-table-window)"),
 		columns: z
 			.array(
@@ -34,6 +35,7 @@ export const handler = async ({
 	mode = "data-driven",
 	source,
 	selectable = false,
+	actions = true,
 	windowed,
 	columns = []
 }) => {
@@ -91,16 +93,30 @@ export const handler = async ({
 				</th>`);
 	});
 
+	if (actions) {
+		headerCols.push(`
+				<th data-ln-table-col-actions>Дејства</th>`);
+	}
+
 	// 2. Template for Data-Driven Rows
 	let templateSlot = "";
 	if (mode === "data-driven") {
 		const rowCols = [];
 		if (selectable) {
-			rowCols.push(`        <td><input type="checkbox" data-ln-table-row-select aria-label="Избери ред"></td>`);
+			rowCols.push(`\t\t\t<td><input type="checkbox" data-ln-table-row-select aria-label="Избери ред"></td>`);
 		}
 		columns.forEach((col) => {
-			rowCols.push(`        <td>{{ ${col.field} }}</td>`);
+			rowCols.push(`\t\t\t<td data-ln-field="${col.field}"></td>`);
 		});
+
+		if (actions) {
+			const modalId = `${id.replace(/-table$/, "")}-modal`;
+			rowCols.push(`\t\t\t<td data-ln-table-cell-actions>
+				<a href="#${modalId}" class="ln-btn ln-btn-icon" data-ln-modal-for="${modalId}" data-ln-table-row-edit aria-label="Уреди">
+					<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-edit"></use></svg>
+				</a>
+			</td>`);
+		}
 
 		templateSlot = `
 	<!-- Template Row for Client-side Data-driven Render -->

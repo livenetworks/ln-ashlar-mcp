@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "DOCS_CORPUS_ROOTS=./resources/ln-ashlar node server.js",
     "test": "node --test test/*.test.js",
     "lint:docs": "node tools/ashlar/lint-cli.js"
   },

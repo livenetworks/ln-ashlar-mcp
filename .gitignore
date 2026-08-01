@@ -2,3 +2,6 @@ node_modules/
 logs/
 config/auth.json
 config/jwt.json
+resources/ln-ashlar
+.claude
+

@@ -7,12 +7,19 @@ import "winston-daily-rotate-file";
 import knowledgeRouter from "./tools/knowledge/index.js";
 import path from "path";
 import fs from "fs";
+import { randomUUID } from "crypto";
 import authMiddleware from "./middleware/auth.js";
 import oauthRouter from "./routes/oauth.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import { randomUUID } from "crypto";
 import { pathToFileURL } from 'url';
+
+if (!process.env.DOCS_CORPUS_ROOTS && !process.env.ASHLAR_DOCS_REPO) {
+  const defaultPath = path.resolve(import.meta.dirname, 'resources/ln-ashlar');
+  if (fs.existsSync(path.join(defaultPath, 'docs-mcp'))) {
+    process.env.DOCS_CORPUS_ROOTS = defaultPath;
+  }
+}
 
 const app = express();
 app.use(express.json());

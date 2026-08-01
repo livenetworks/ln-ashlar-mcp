@@ -154,7 +154,7 @@ describe("review_plan handler — wrap_up exempt from iteration cap", () => {
 			const result = await handler({ plan: "final plan", iteration: 4, wrap_up: true, previous_feedback: "c1\nc2" });
 			assert.doesNotMatch(result.content[0].text, /exceeds the maximum/);
 			assert.equal(result.isError, true);
-			assert.match(result.content[0].text, /gemini-cli not found/);
+			assert.match(result.content[0].text, /binary not found/);
 		} finally {
 			process.env.PATH = originalPath;
 		}
