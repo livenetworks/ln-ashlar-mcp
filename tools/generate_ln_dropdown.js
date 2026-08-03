@@ -1,21 +1,24 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { loadTemplate, compileTemplate, escapeHtml } from "./snippets/template_engine.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_dropdown";
 
 export const definition = {
 	title: "Generate ln-ashlar Dropdown",
 	description:
-		"Генерира ln-ashlar dropdown мени од темплејтот во _src/components/dropdown.html.",
+		"Генерира dropdown мени: <div data-ln-dropdown> со <button data-ln-toggle-for> тригер " +
+		"и <ul data-ln-toggle> мени, според канонскиот markup во ln-dropdown.md.",
 	inputSchema: {
-		id: z.string().describe("Уникатен ID за dropdown менито"),
+		id: z.string().describe("Уникатен ID за dropdown-от"),
 		trigger_label: z.string().default("Мени").describe("Текст на копчето за отворање"),
 		items: z
 			.array(
 				z.object({
-					title: z.string().describe("Текст на опцијата"),
-					href: z.string().optional().describe("URL линк (ако е линк)"),
-					divider: z.boolean().optional().describe("Дали да вметне линија разделител")
+					title: z.string().optional().describe("Текст на опцијата"),
+					href: z.string().optional().describe("URL — ако е зададено се рендерира како <a>"),
+					current: z.boolean().optional().describe("Означува избрана ставка со aria-current='true'"),
+					divider: z.boolean().optional().describe("Линија разделител наместо ставка")
 				})
 			)
 			.describe("Листа на ставки во менито")
@@ -23,35 +26,20 @@ export const definition = {
 };
 
 export const handler = async ({ id, trigger_label = "Мени", items = [] }) => {
-	const dropdownTpl = loadTemplate("components/dropdown.html");
-
-	const menuItems = items.map((item) => {
-		if (item.divider) {
-			return `    <li><hr class="ln-dropdown-divider"></li>`;
-		}
-		if (item.href) {
-			return `    <li><a href="${item.href}" class="ln-dropdown-item">${item.title}</a></li>`;
-		}
-		return `    <li><button type="button" class="ln-dropdown-item">${item.title}</button></li>`;
+	const compiled = items.map((item) => {
+		if (item.divider) return `\t<li><hr></li>`;
+		const current = item.current ? ' aria-current="true"' : "";
+		const label = escapeHtml(item.title ?? "");
+		return item.href
+			? `\t<li><a href="${escapeHtml(item.href)}"${current}>${label}</a></li>`
+			: `\t<li><button type="button"${current}>${label}</button></li>`;
 	});
 
-	const htmlOutput = compileTemplate(
-		dropdownTpl,
-		{
-			id,
-			trigger_label
-		},
-		{
-			items: menuItems.join("\n")
-		}
+	return htmlResult(
+		compileTemplate(
+			loadTemplate("components/dropdown.html"),
+			{ id, trigger_label },
+			{ items: compiled.join("\n") }
+		)
 	);
-
-	return {
-		content: [
-			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
-			}
-		]
-	};
 };

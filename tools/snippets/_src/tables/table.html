@@ -1,15 +1,14 @@
 <!-- ln-ashlar Table Component -->
-<section id="{{id}}" data-ln-table="{{name}}"{{source_attr}}{{window_attr}} class="ln-table-wrapper">
+<div id="{{id}}"{{root_attrs}} class="ln-table-wrapper">
+	<!-- EMPTY_TEMPLATE_SLOT -->
 	<table class="ln-table">
 		<thead>
 			<tr>
 				<!-- HEADER_COLS_SLOT -->
 			</tr>
 		</thead>
-		<tbody data-ln-table-body>
-			<!-- SSR_ROWS_SLOT -->
-		</tbody>
+		<tbody data-ln-table-body></tbody>
 	</table>
+
 	<!-- TEMPLATE_SLOT -->
-</section>
-<!-- POPOVER_FILTERS_SLOT -->
+</div>

@@ -1,58 +1,49 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { loadTemplate, compileTemplate, escapeHtml, indentBlock } from "./snippets/template_engine.js";
+import { ATTR } from "./snippets/attributes.generated.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_accordion";
 
 export const definition = {
 	title: "Generate ln-ashlar Accordion",
 	description:
-		"Генерира ln-ashlar акордеон со N панели од темплејтот во _src/components/accordion.html.",
+		"Генерира акордеон со N панели. Секој панел е <li> со <button data-ln-toggle-for> тригер " +
+		"и <section data-ln-toggle> панел — data-ln-toggle носи 'open'/'closed' како состојба.",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за акордеон омотот"),
 		panels: z
 			.array(
 				z.object({
-					id: z.string().optional(),
+					id: z.string().optional().describe("Прилагоден ID за панелот"),
 					title: z.string().describe("Наслов на панелот"),
 					content: z.string().describe("HTML содржина на панелот"),
 					open: z.boolean().optional().describe("Дали панелот е почетно отворен")
 				})
 			)
-			.describe("Листа на панели во акордеонот")
+			.describe("Листа на панели")
 	}
 };
 
 export const handler = async ({ id, panels = [] }) => {
-	const accTpl = loadTemplate("components/accordion.html");
-
-	const compiledPanels = panels.map((panel, idx) => {
-		const panelId = panel.id || `${id}-panel-${idx + 1}`;
-		const openAttr = panel.open ? ' data-ln-toggle="open"' : " data-ln-toggle";
-		return `  <li>
-		<header data-ln-toggle-for="${panelId}" class="ln-accordion-header">
-			${panel.title}
+	const compiled = panels.map((panel, i) => {
+		const panelId = panel.id || `${id}-panel-${i + 1}`;
+		// data-ln-toggle е СОСТОЈБА: 'open' | 'closed'. Гол атрибут не е валидна состојба.
+		const state = panel.open ? "open" : "closed";
+		return `\t<li>
+		<button type="button" class="ln-accordion-header" ${ATTR.toggleFor}="${escapeHtml(panelId)}" aria-expanded="${panel.open ? "true" : "false"}">
+			${escapeHtml(panel.title)}
 			<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-chevron-down"></use></svg>
-		</header>
-		<section id="${panelId}"${openAttr} class="ln-collapsible">
+		</button>
+		<section id="${escapeHtml(panelId)}" ${ATTR.toggle}="${state}" class="ln-collapsible">
 			<article class="ln-collapsible-body">
-				${panel.content}
+${indentBlock(panel.content, 4)}
 			</article>
 		</section>
 	</li>`;
 	});
 
-	const htmlOutput = compileTemplate(
-		accTpl,
-		{ id },
-		{ panels: compiledPanels.join("\n") }
+	return htmlResult(
+		compileTemplate(loadTemplate("components/accordion.html"), { id }, { panels: compiled.join("\n") })
 	);
-
-	return {
-		content: [
-			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
-			}
-		]
-	};
 };

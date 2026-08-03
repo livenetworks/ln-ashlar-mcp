@@ -1,23 +1,27 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { loadTemplate, compileTemplate, raw, escapeHtml } from "./snippets/template_engine.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_page";
 
 export const definition = {
 	title: "Generate ln-ashlar Page Shell",
 	description:
-		"Генерира комплетна HTML страница (page shell) со вчитување на чисти HTML темплејти од _src/base/. " +
-		"Поддржува интелигентно комбинирање за SSR и SPA (Data-driven) режими, header, footer и тема.",
+		"Генерира комплетна HTML страница (page shell) со header, footer, toast контејнер и тема. " +
+		"Темата се поставува со data-theme на <html> (така ја чита scss/config/_theme.scss); " +
+		"'auto' намерно не емитува атрибут за да важи prefers-color-scheme.",
 	inputSchema: {
 		title: z.string().describe("Наслов на страницата (<title>)"),
-		render_mode: z
-			.enum(["ssr", "spa", "data-driven"])
-			.default("ssr")
-			.describe("Режим на рендерирање: 'ssr' или 'spa'/'data-driven'"),
 		lang: z.string().default("mk").describe("Јазик на документот ('mk', 'en')"),
-		theme: z.enum(["light", "dark", "auto"]).default("auto").describe("Почетна тема"),
+		theme: z
+			.enum(["light", "dark", "auto"])
+			.default("auto")
+			.describe("Почетна тема. 'auto' = без атрибут, следи prefers-color-scheme."),
+		assets_path: z.string().default("/assets").describe("Патека до ln-ashlar.css / ln-ashlar.js"),
 		include_header: z.boolean().default(true).describe("Дали да вклучи стандарден ln-header"),
 		include_footer: z.boolean().default(true).describe("Дали да вклучи стандарден ln-footer"),
+		include_toast: z.boolean().default(true).describe("Дали да вклучи <ul data-ln-toast> контејнер"),
+		brand_name: z.string().default("Live Networks").describe("Текст на брендот во хедерот"),
 		main_id: z.string().default("main-content").describe("ID за <main> елементот"),
 		custom_body_class: z.string().optional().describe("Дополнителни CSS класи за <body>"),
 		initial_content: z.string().optional().describe("Почетна HTML содржина внатре во <main>")
@@ -26,74 +30,52 @@ export const definition = {
 
 export const handler = async ({
 	title,
-	render_mode = "ssr",
 	lang = "mk",
 	theme = "auto",
+	assets_path = "/assets",
 	include_header = true,
 	include_footer = true,
+	include_toast = true,
+	brand_name = "Live Networks",
 	main_id = "main-content",
 	custom_body_class = "",
 	initial_content = ""
 }) => {
-	// 1. Вчитај го главниот HTML темплејт од _src/base/page-shell.html
-	const pageShellTpl = loadTemplate("base/page-shell.html");
+	const headerHtml = include_header
+		? compileTemplate(loadTemplate("base/header.html"), { brand_name })
+		: "";
 
-	// 2. Интелигентно одредување дата-атрибути
-	const bodyDataAttrs = [];
-	if (theme !== "auto") bodyDataAttrs.push(`data-ln-theme="${theme}"`);
-	if (render_mode === "spa" || render_mode === "data-driven") bodyDataAttrs.push(`data-ln-app="${render_mode}"`);
+	const footerHtml = include_footer
+		? compileTemplate(loadTemplate("base/footer.html"), { year: String(new Date().getFullYear()) })
+		: "";
 
-	const bodyAttrsStr = bodyDataAttrs.length > 0 ? " " + bodyDataAttrs.join(" ") : "";
-	const bodyClassStr = custom_body_class ? ` class="${custom_body_class}"` : "";
+	const toastHtml = include_toast
+		? compileTemplate(loadTemplate("components/toast-container.html"), { timeout: "6000", max: "5" })
+		: "";
 
-	// 3. Подготовка на слотови (Header, Footer, Toast, Content)
-	let headerHtml = "";
-	if (include_header) {
-		const headerTpl = loadTemplate("base/header.html");
-		headerHtml = compileTemplate(headerTpl, { brand_name: "Live Networks" });
-	}
+	const mainContent =
+		initial_content && initial_content.trim()
+			? initial_content
+			: `<section class="ln-section">\n\t<h1>${escapeHtml(title)}</h1>\n\t<p>Добредојдовте во новиот модул изграден со ln-ashlar.</p>\n</section>`;
 
-	let footerHtml = "";
-	if (include_footer) {
-		const footerTpl = loadTemplate("base/footer.html");
-		footerHtml = compileTemplate(footerTpl, { year: new Date().getFullYear().toString() });
-	}
-
-	let toastHtml = "";
-	if (render_mode === "spa" || render_mode === "data-driven") {
-		const toastTpl = loadTemplate("components/toast-container.html");
-		toastHtml = compileTemplate(toastTpl, { timeout: "6000", max: "5" });
-	}
-
-	const mainContent = initial_content && initial_content.trim()
-		? initial_content
-		: `<!-- Содржина на страницата -->\n        <section class="ln-section">\n          <h1>${title}</h1>\n          <p>Добредојдовте во новиот модул изграден со ln-ashlar.</p>\n        </section>`;
-
-	// 4. Комбинирај сè заедно преку темплејт енџинот
-	const htmlOutput = compileTemplate(
-		pageShellTpl,
-		{
-			lang,
-			title,
-			assets_path: "/assets",
-			main_id,
-			body_class: bodyClassStr,
-			body_attrs: bodyAttrsStr
-		},
-		{
-			header: headerHtml,
-			footer: footerHtml,
-			toast: toastHtml,
-			main_content: mainContent
-		}
-	);
-
-	return {
-		content: [
+	return htmlResult(
+		compileTemplate(
+			loadTemplate("base/page-shell.html"),
 			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
+				lang,
+				title,
+				assets_path,
+				main_id,
+				// data-theme на <html> — така го бара scss/config/_theme.scss.
+				theme_attr: raw(theme === "auto" ? "" : ` data-theme="${escapeHtml(theme)}"`),
+				body_class: raw(custom_body_class ? ` class="${escapeHtml(custom_body_class)}"` : "")
+			},
+			{
+				header: headerHtml,
+				footer: footerHtml,
+				toast: toastHtml,
+				main_content: mainContent
 			}
-		]
-	};
+		)
+	);
 };

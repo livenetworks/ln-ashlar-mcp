@@ -1,0 +1,14 @@
+<!-- ln-ashlar Data Coordinator (Layer 2) — обвиткува вгнездени компоненти -->
+<!-- Коренот е <div>, не <ul>: табела/модал/dialog не смеат да бидат деца на листа. -->
+<!-- Нема `hidden` — тоа би ја сокрило целата вгнездена содржина. -->
+<div data-ln-data-coordinator="{{resource}}" id="{{id}}">
+	<!-- Локален IndexedDB кеш -->
+	<div data-ln-data-store="{{resource}}"{{store_indexes_attr}} hidden></div>
+
+	<!-- Мрежен API конектор -->
+	<div data-ln-api-connector="{{api_path}}"{{api_base_url_attr}} hidden></div>
+
+	<!-- DICT_SLOT -->
+
+	<!-- CHILDREN_SLOT -->
+</div>

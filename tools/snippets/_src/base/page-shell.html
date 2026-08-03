@@ -1,19 +1,18 @@
 <!DOCTYPE html>
-<html lang="{{lang}}">
+<html lang="{{lang}}"{{theme_attr}}>
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>{{title}}</title>
 	<!-- ln-ashlar Core Styles & Script -->
 	<link rel="stylesheet" href="{{assets_path}}/ln-ashlar.css">
-	<script type="module" src="{{assets_path}}/ln-ashlar.js" defer></script>
+	<script type="module" src="{{assets_path}}/ln-ashlar.js"></script>
 	<!-- EXTRA_HEAD_SLOT -->
 </head>
-<body{{body_class}}{{body_attrs}}>
+<body{{body_class}}>
 	<div class="ln-app-layout">
 		<!-- HEADER_SLOT -->
 
-		<!-- Main Content Shell -->
 		<main id="{{main_id}}" class="ln-main-content">
 			<div class="ln-container">
 				<!-- MAIN_CONTENT_SLOT -->

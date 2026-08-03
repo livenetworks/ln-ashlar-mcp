@@ -1,55 +1,42 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { loadTemplate, compileTemplate, escapeHtml } from "./snippets/template_engine.js";
+import { attr } from "./snippets/builders.js";
+import { ATTR } from "./snippets/attributes.generated.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_stepper";
 
 export const definition = {
 	title: "Generate ln-ashlar Stepper",
 	description:
-		"Генерира ln-ashlar Stepper за чекор-по-чекор процеси од темплејтот во tools/snippets/_src/components/stepper.html.",
+		"Генерира чекор-по-чекор индикатор. Ги следи селекторите од scss/config/mixins/_stepper.scss: " +
+		"<ol data-ln-stepper> со <li data-ln-step='complete'|'current'> и > [data-ln-step-label]. " +
+		"Редниот број го рендерира CSS counter — не се пишува во markup-от.",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за stepper елементот"),
 		steps: z
 			.array(
 				z.object({
-					number: z.number().describe("Реден број на чекорот"),
-					title: z.string().describe("Наслов на чекорот"),
-					description: z.string().optional().describe("Краток опис"),
-					status: z.enum(["completed", "active", "pending"]).default("pending")
+					label: z.string().describe("Наслов на чекорот"),
+					status: z
+						.enum(["complete", "current", "pending"])
+						.default("pending")
+						.describe("Состојба. 'pending' намерно не емитува атрибут — тоа е default стилот.")
 				})
 			)
-			.describe("Листа на чекори")
+			.describe("Листа на чекори по редослед")
 	}
 };
 
 export const handler = async ({ id, steps = [] }) => {
-	const tpl = loadTemplate("components/stepper.html");
-
-	const compiledSteps = steps.map((step) => {
-		const statusClass = `ln-step-${step.status}`;
-		const isCurrent = step.status === "active" ? ' aria-current="step"' : "";
-		const descHtml = step.description ? `\n\t\t\t<span class="ln-step-desc">${step.description}</span>` : "";
-
-		return `\t<li class="ln-step ${statusClass}"${isCurrent}>
-		<span class="ln-step-number">${step.number}</span>
-		<div class="ln-step-content">
-			<span class="ln-step-title">${step.title}</span>${descHtml}
-		</div>
-	</li>`;
+	const compiled = steps.map((step) => {
+		const status = step.status ?? "pending";
+		const stepAttr = status === "pending" ? "" : attr(ATTR.step, status);
+		const current = status === "current" ? ' aria-current="step"' : "";
+		return `\t<li${stepAttr}${current}>\n\t\t<span ${ATTR.stepLabel}>${escapeHtml(step.label)}</span>\n\t</li>`;
 	});
 
-	const htmlOutput = compileTemplate(
-		tpl,
-		{ id },
-		{ steps: compiledSteps.join("\n") }
+	return htmlResult(
+		compileTemplate(loadTemplate("components/stepper.html"), { id }, { steps: compiled.join("\n") })
 	);
-
-	return {
-		content: [
-			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
-			}
-		]
-	};
 };

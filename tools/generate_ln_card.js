@@ -1,102 +1,69 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { loadTemplate, compileTemplate, raw, escapeHtml } from "./snippets/template_engine.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_card";
 
 export const definition = {
 	title: "Generate ln-ashlar Card",
 	description:
-		"Генерира ln-ashlar картичка (Card UI) од темплејтот во _src/layouts/card.html. " +
-		"Поддржува наслов, значка (badge), содржина и акциски копчиња.",
+		"Генерира картичка со наслов, значка, содржина и акции. Чист семантички HTML — " +
+		"ln-ashlar нема JS компонента за card, стилизирањето е преку .ln-card класата.",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за картичката"),
 		title: z.string().optional().describe("Наслов на картичката"),
 		subtitle: z.string().optional().describe("Поднаслов"),
-		badge: z.string().optional().describe("Опционален текст за значка (badge)"),
-		content: z.string().describe("HTML содржина на телото на картичката"),
+		badge: z.string().optional().describe("Опционален текст за значка"),
+		content: z.string().describe("HTML содржина на телото"),
 		actions: z
 			.array(
 				z.object({
 					label: z.string(),
-					href: z.string().optional(),
-					primary: z.boolean().optional(),
-					type: z.string().optional()
+					href: z.string().optional().describe("Ако е зададено, се рендерира како <a>, инаку <button>"),
+					primary: z.boolean().optional()
 				})
 			)
 			.optional()
-			.describe("Акциски копчиња во футерот на картичката"),
+			.describe("Акции во футерот"),
 		custom_class: z.string().optional().describe("Дополнителни CSS класи")
 	}
 };
 
-export const handler = async ({
-	id,
-	title,
-	subtitle,
-	badge,
-	content,
-	actions = [],
-	custom_class = ""
-}) => {
-	const cardTpl = loadTemplate("layouts/card.html");
-
-	// Header Slot
+export const handler = async ({ id, title, subtitle, badge, content, actions = [], custom_class }) => {
 	let headerHtml = "";
 	if (title || badge) {
-		const badgeHtml = badge ? `<span class="ln-badge">${badge}</span>` : "";
-		const subtitleHtml = subtitle ? `<p class="ln-card-subtitle">${subtitle}</p>` : "";
-		headerHtml = `
-	<header class="ln-card-header">
-		<div class="ln-card-title-group">
-			<h3 class="ln-card-title">${title ?? ""}</h3>
-			${subtitleHtml}
-		</div>
-		${badgeHtml}
-	</header>`;
+		const badgeHtml = badge ? `\n\t<span class="ln-badge">${escapeHtml(badge)}</span>` : "";
+		const subtitleHtml = subtitle ? `\n\t\t<p class="ln-card-subtitle">${escapeHtml(subtitle)}</p>` : "";
+		headerHtml =
+			`<header class="ln-card-header">\n` +
+			`\t<div class="ln-card-title-group">\n` +
+			`\t\t<h3 class="ln-card-title">${escapeHtml(title ?? "")}</h3>${subtitleHtml}\n` +
+			`\t</div>${badgeHtml}\n` +
+			`</header>`;
 	}
 
-	// Footer / Actions Slot
 	let footerHtml = "";
-	if (actions && actions.length > 0) {
-		const actionItems = actions
+	if (actions.length) {
+		const items = actions
 			.map((a) => {
-				const btnClass = a.primary ? "ln-btn ln-btn-primary" : "ln-btn ln-btn-secondary";
-				if (a.href) {
-					return `<a href="${a.href}" class="${btnClass}">${a.label}</a>`;
-				}
-				return `<button type="${a.type || "button"}" class="${btnClass}">${a.label}</button>`;
+				const cls = a.primary ? "ln-btn ln-btn-primary" : "ln-btn ln-btn-secondary";
+				return a.href
+					? `\t\t<a href="${escapeHtml(a.href)}" class="${cls}">${escapeHtml(a.label)}</a>`
+					: `\t\t<button type="button" class="${cls}">${escapeHtml(a.label)}</button>`;
 			})
-			.join("\n      ");
-
-		footerHtml = `
-	<footer class="ln-card-footer">
-		<div class="ln-card-actions">
-			${actionItems}
-		</div>
-	</footer>`;
+			.join("\n");
+		footerHtml =
+			`<footer class="ln-card-footer">\n\t<div class="ln-card-actions">\n${items}\n\t</div>\n</footer>`;
 	}
 
-	const cardClassStr = custom_class ? ` ${custom_class}` : "";
-
-	const htmlOutput = compileTemplate(
-		cardTpl,
-		{
-			id,
-			card_class: cardClassStr
-		},
-		{
-			header: headerHtml,
-			body: content,
-			footer: footerHtml
-		}
-	);
-
-	return {
-		content: [
+	return htmlResult(
+		compileTemplate(
+			loadTemplate("layouts/card.html"),
 			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
-			}
-		]
-	};
+				id,
+				card_class: raw(custom_class ? ` ${escapeHtml(custom_class)}` : "")
+			},
+			{ header: headerHtml, body: content, footer: footerHtml }
+		)
+	);
 };

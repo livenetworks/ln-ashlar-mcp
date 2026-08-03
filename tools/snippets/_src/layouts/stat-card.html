@@ -1,12 +1,7 @@
-<!-- ln-ashlar Stat Card Component -->
-<article class="ln-stat-card{{custom_class}}" id="{{id}}" data-ln-stat-card>
-	<div class="ln-stat-card-header">
-		<span class="ln-stat-card-title">{{title}}</span>
-		<!-- ICON_SLOT -->
-	</div>
-	<div class="ln-stat-card-body">
-		<span class="ln-stat-card-value">{{value}}</span>
-		<!-- TREND_SLOT -->
-	</div>
-	<p class="ln-stat-card-footer">{{description}}</p>
+<!-- ln-ashlar Stat Card -->
+<!-- SCSS користи direct-child селектори (> [data-ln-stat-value]) — не вгнездувај ги во divs. -->
+<article data-ln-stat-card id="{{id}}"{{card_class}}>
+	<span data-ln-stat-label>{{label}}</span>
+	<span data-ln-stat-value{{stat_attrs}}>{{value}}</span>
+	<!-- TREND_SLOT -->
 </article>

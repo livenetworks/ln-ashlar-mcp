@@ -1,58 +1,55 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { loadTemplate, compileTemplate, escapeHtml, indentBlock } from "./snippets/template_engine.js";
+import { ATTR } from "./snippets/attributes.generated.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_tabs";
 
 export const definition = {
 	title: "Generate ln-ashlar Tabs",
 	description:
-		"Генерира ln-ashlar табови со панели од темплејтот во _src/components/tabs.html. " +
-		"Поддржува URL hash синхронизација и избор на default таб.",
+		"Генерира табови со панели. Со trigger='anchor' добиваш URL hash deep-linking (#id:key) " +
+		"со гол data-ln-tab; со trigger='button' добиваш data-ln-tab='{key}'. " +
+		"Неактивните панели носат class='hidden' — тоа е конвенцијата во ln-tabs.md.",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за табовите"),
+		trigger: z
+			.enum(["anchor", "button"])
+			.default("anchor")
+			.describe("'anchor' = hash deep-linkable; 'button' = обични копчиња"),
 		default_tab: z.string().optional().describe("Клуч на подразбирливиот активен таб"),
 		tabs: z
 			.array(
 				z.object({
 					key: z.string().describe("Уникатен клуч на табот (на пр. 'info', 'settings')"),
-					title: z.string().describe("Наслов на копчето за табот"),
-					content: z.string().describe("HTML содржина за панелот на табот")
+					title: z.string().describe("Наслов на копчето/линкот"),
+					content: z.string().describe("HTML содржина за панелот")
 				})
 			)
+			.min(1)
 			.describe("Листа на табови и нивни содржини")
 	}
 };
 
-export const handler = async ({ id, default_tab, tabs = [] }) => {
-	const tabsTpl = loadTemplate("components/tabs.html");
-	const activeKey = default_tab || tabs[0]?.key || "tab-1";
+export const handler = async ({ id, trigger = "anchor", default_tab, tabs = [] }) => {
+	const activeKey = default_tab || tabs[0]?.key;
 
-	const navLinks = tabs.map((tab) => {
-		return `    <a href="#${id}:${tab.key}" data-ln-tab class="ln-tab-link">${tab.title}</a>`;
-	});
-
-	const panels = tabs.map((tab) => {
-		const isHidden = tab.key === activeKey ? "" : ' class="hidden"';
-		return `  <section data-ln-panel="${tab.key}"${isHidden}>
-		${tab.content}
-	</section>`;
-	});
-
-	const htmlOutput = compileTemplate(
-		tabsTpl,
-		{ id, default_tab: activeKey },
-		{
-			nav: navLinks.join("\n"),
-			panels: panels.join("\n")
-		}
+	const nav = tabs.map((tab) =>
+		trigger === "anchor"
+			? `\t<a href="#${escapeHtml(id)}:${escapeHtml(tab.key)}" ${ATTR.tab}>${escapeHtml(tab.title)}</a>`
+			: `\t<button type="button" ${ATTR.tab}="${escapeHtml(tab.key)}">${escapeHtml(tab.title)}</button>`
 	);
 
-	return {
-		content: [
-			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
-			}
-		]
-	};
+	const panels = tabs.map((tab) => {
+		const hidden = tab.key === activeKey ? "" : ' class="hidden"';
+		return `<section ${ATTR.panel}="${escapeHtml(tab.key)}"${hidden}>\n${indentBlock(tab.content, 1)}\n</section>`;
+	});
+
+	return htmlResult(
+		compileTemplate(
+			loadTemplate("components/tabs.html"),
+			{ id, default_tab: activeKey },
+			{ nav: nav.join("\n"), panels: panels.join("\n") }
+		)
+	);
 };

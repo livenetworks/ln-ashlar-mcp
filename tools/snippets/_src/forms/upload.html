@@ -1,10 +1,12 @@
-<!-- ln-ashlar Upload Component -->
-<div class="ln-upload-dropzone" id="{{id}}" data-ln-upload data-ln-upload-accept="{{accept}}" data-ln-upload-max-size="{{max_size}}">
+<!-- ln-ashlar Upload Dropzone -->
+<!-- data-ln-upload ја носи endpoint URL вредноста — без неа нема каде да прати. -->
+<div class="ln-upload" id="{{id}}" data-ln-upload="{{action_url}}" data-ln-upload-accept="{{accept}}"{{delete_attr}}{{context_attr}}>
+	<!-- DICT_SLOT -->
 	<input type="file" id="{{id}}-input" name="{{name}}" class="ln-upload-input" accept="{{accept}}"{{multiple_attr}}{{required_attr}}>
-	<label for="{{id}}-input" class="ln-upload-label">
-		<svg class="ln-icon ln-upload-icon" aria-hidden="true"><use href="#ln-icon-cloud-upload"></use></svg>
+	<label for="{{id}}-input" class="ln-upload__zone">
+		<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-cloud-upload"></use></svg>
 		<span class="ln-upload-text">Повлечете фајл тука или <strong>прелистајте</strong></span>
 		<span class="ln-upload-hint">{{hint}}</span>
 	</label>
-	<ul class="ln-upload-file-list" data-ln-upload-files></ul>
+	<ul class="ln-upload__list"></ul>
 </div>

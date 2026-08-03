@@ -1,16 +1,32 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { buildDict } from "./snippets/builders.js";
+import { ATTR } from "./snippets/attributes.generated.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_dictionary";
+
+/**
+ * Компонентите што навистина читаат речник преку lnCore.buildDict().
+ * Клучот е пријателско име, вредноста е атрибутот што го бара таа компонента.
+ */
+const DICT_ATTR_BY_COMPONENT = {
+	"data-coordinator": ATTR.dataCoordinatorDict,
+	table: ATTR.tableDict,
+	upload: ATTR.uploadDict,
+	date: ATTR.dateDict,
+	editor: ATTR.editorDict
+};
 
 export const definition = {
 	title: "Generate ln-ashlar Dictionary",
 	description:
-		"Генерира <ul hidden data-ln-dictionary> речник со li ставки за преводи, " +
-		"системски пораки и грешки според ln-ashlar конвенциите.",
+		"Генерира hidden i18n речник според doctrine/html-markup-rules.md §3: <ul hidden> со " +
+		"<li data-ln-{component}-dict=\"{key}\">. Мора да се вгради ВНАТРЕ во markup-от на компонентата " +
+		"што го чита — lnCore.buildDict(root, selector) бара само во сопственото поддрво.",
 	inputSchema: {
-		id: z.string().describe("Уникатен ID за речникот (на пр. 'app-dictionary')"),
-		name: z.string().default("messages").describe("Име на речникот"),
+		component: z
+			.enum(Object.keys(DICT_ATTR_BY_COMPONENT))
+			.describe("Компонентата што ќе го чита речникот — го одредува data-ln-*-dict атрибутот"),
 		entries: z
 			.array(
 				z.object({
@@ -18,34 +34,15 @@ export const definition = {
 					value: z.string().describe("Текст на пораката")
 				})
 			)
-			.describe("Листа на парови клуч-порака во речникот")
+			.describe("Листа на парови клуч-порака")
 	}
 };
 
-export const handler = async ({ id, name = "messages", entries = [] }) => {
-	const dictTpl = loadTemplate("components/dictionary.html");
-
-	const items = entries.map(
-		(e) => `  <li data-ln-dict-key="${e.key}">${e.value}</li>`
+export const handler = async ({ component, entries = [] }) =>
+	htmlResult(
+		buildDict({
+			dictAttr: DICT_ATTR_BY_COMPONENT[component],
+			entries,
+			comment: `i18n речник за ${component} — вгради го внатре во компонентата`
+		})
 	);
-
-	const htmlOutput = compileTemplate(
-		dictTpl,
-		{
-			id,
-			name
-		},
-		{
-			items: items.join("\n")
-		}
-	);
-
-	return {
-		content: [
-			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
-			}
-		]
-	};
-};

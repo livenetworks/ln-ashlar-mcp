@@ -6,7 +6,8 @@
   "scripts": {
     "start": "DOCS_CORPUS_ROOTS=./resources/ln-ashlar node server.js",
     "test": "node --test test/*.test.js",
-    "lint:docs": "node tools/ashlar/lint-cli.js"
+    "lint:docs": "node tools/ashlar/lint-cli.js",
+    "sync:ln-attrs": "node scripts/sync-ln-attrs.js"
   },
   "keywords": [],
   "author": "",

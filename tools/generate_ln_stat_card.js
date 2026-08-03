@@ -1,74 +1,69 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { loadTemplate, compileTemplate, raw, escapeHtml } from "./snippets/template_engine.js";
+import { attr } from "./snippets/builders.js";
+import { ATTR } from "./snippets/attributes.generated.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_stat_card";
+
+const TREND_ICON = {
+	up: "#ln-icon-arrow-up",
+	down: "#ln-icon-arrow-down",
+	neutral: "#ln-icon-minus"
+};
 
 export const definition = {
 	title: "Generate ln-ashlar Stat Card",
 	description:
-		"Генерира ln-ashlar Stat Card за дашборд и метрики од темплејтот во tools/snippets/_src/layouts/stat-card.html.",
+		"Генерира метричка картичка. Структурата ги следи direct-child селекторите од " +
+		"scss/config/mixins/_stat-card.scss: [data-ln-stat-label], [data-ln-stat-value], [data-ln-stat-trend]. " +
+		"Со `store` вредноста станува жива преку data-ln-stat (ln-stat брои записи во store-от).",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за картичката"),
-		title: z.string().describe("Наслов на метриката (на пр. 'Вкупно Документи')"),
-		value: z.string().describe("Главна вредност (на пр. '1,240' или '$45,200')"),
-		description: z.string().optional().describe("Опис на дното (на пр. 'Споредено со минатиот месец')"),
+		label: z.string().describe("Наслов на метриката (на пр. 'Вкупно Документи')"),
+		value: z.string().default("0").describe("Почетна вредност. Со `store`, ln-stat ја заменува во runtime."),
+		store: z
+			.string()
+			.optional()
+			.describe("Име на store за жив број (data-ln-stat). Без ова, вредноста е статична."),
+		stat_filter: z
+			.string()
+			.optional()
+			.describe("Филтер за бројачот во формат 'field:value' (data-ln-stat-filter)"),
 		trend: z.string().optional().describe("Текст за тренд (на пр. '+12.5%')"),
-		trend_direction: z.enum(["up", "down", "neutral"]).default("up").optional(),
-		icon_id: z.string().optional().describe("Опционална икона"),
+		trend_direction: z.enum(["up", "down", "neutral"]).default("up").describe("Насока на трендот"),
 		custom_class: z.string().optional().describe("Дополнителни CSS класи")
 	}
 };
 
 export const handler = async ({
 	id,
-	title,
-	value,
-	description = "",
+	label,
+	value = "0",
+	store,
+	stat_filter,
 	trend,
 	trend_direction = "up",
-	icon_id,
-	custom_class = ""
+	custom_class
 }) => {
-	const tpl = loadTemplate("layouts/stat-card.html");
-	const customClassStr = custom_class ? ` ${custom_class}` : "";
+	const trendSlot = trend
+		? `<span ${ATTR.statTrend}="${escapeHtml(trend_direction)}">\n` +
+			`\t<svg class="ln-icon" aria-hidden="true"><use href="${TREND_ICON[trend_direction]}"></use></svg>\n` +
+			`\t${escapeHtml(trend)}\n` +
+			`</span>`
+		: "";
 
-	let iconSlot = "";
-	if (icon_id) {
-		iconSlot = `\n\t\t<svg class="ln-icon ln-stat-card-icon" aria-hidden="true"><use href="#${icon_id}"></use></svg>`;
-	}
-
-	let trendSlot = "";
-	if (trend) {
-		const trendClass = `ln-trend ln-trend-${trend_direction}`;
-		const iconArrow = trend_direction === "up" ? "#ln-icon-arrow-up" : "#ln-icon-arrow-down";
-		trendSlot = `
-		<span class="${trendClass}">
-			<svg class="ln-icon" aria-hidden="true"><use href="${iconArrow}"></use></svg>
-			${trend}
-		</span>`;
-	}
-
-	const htmlOutput = compileTemplate(
-		tpl,
-		{
-			id,
-			title,
-			value,
-			description,
-			custom_class: customClassStr
-		},
-		{
-			icon: iconSlot,
-			trend: trendSlot
-		}
-	);
-
-	return {
-		content: [
+	return htmlResult(
+		compileTemplate(
+			loadTemplate("layouts/stat-card.html"),
 			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
-			}
-		]
-	};
+				id,
+				label,
+				value,
+				stat_attrs: raw(attr(ATTR.stat, store) + attr(ATTR.statFilter, stat_filter)),
+				card_class: raw(custom_class ? ` class="${escapeHtml(custom_class)}"` : "")
+			},
+			{ trend: trendSlot }
+		)
+	);
 };

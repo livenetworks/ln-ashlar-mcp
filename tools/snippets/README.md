@@ -1,107 +1,118 @@
-# 📚 `tools/snippets` — ln-ashlar HTML Snippet MCP Generators
+# `tools/snippets` — ln-ashlar HTML Snippet генератори
 
-> **Автор:** Live Networks Team  
-> **Опис:** Модуларен систем од MCP (Model Context Protocol) алатки и чисти HTML темплејти за автоматско генерирање на семантички, стандардизирани `ln-ashlar` HTML снипети.
+Модуларен систем од MCP алатки и чисти HTML темплејти за генерирање на семантички `ln-ashlar` снипети.
 
 ---
 
-## 🛠️ Архитектура на домен
+## Архитектура
 
 ```text
+scripts/sync-ln-attrs.js          # codegen: ln-ashlar js/**+scss/** → attributes.generated.js
 tools/snippets/
-├── _src/                         # 📁 ЧИСТИ HTML ШАБЛОНИ И ПАРЦИЈАЛИ
-│   ├── base/                     # page-shell.html, header.html, footer.html
-│   ├── layouts/                  # card.html, grid.html
-│   ├── components/               # modal.html, accordion.html, tabs.html, dropdown.html, search.html, popover.html, dictionary.html
-│   ├── forms/                    # form.html, field.html
-│   ├── tables/                   # table.html
-│   ├── containers/               # data-coordinator.html
-│   └── modules/                  # crud.html
-└── template_engine.js            # ⚡ Модуларен енџин за вчитување и задолжителна TAB (\t) индентација
+├── attributes.generated.js       # ⚠ ГЕНЕРИРАН — единствениот извор на data-ln-* имиња
+├── template_engine.js            # loadTemplate / compileTemplate / escapeHtml / raw / indentBlock
+├── builders.js                   # чисти build*() функции што враќаат HTML стринг
+├── field_schema.js               # ЕДИНСТВЕНАТА zod дефиниција на форма-поле
+├── mcp.js                        # htmlResult() — единствената точка со ```html fence
+└── _src/                         # читливи HTML темплејти
+    ├── base/       page-shell.html, header.html, footer.html
+    ├── layouts/    card.html, stat-card.html
+    ├── components/ modal.html, accordion.html, tabs.html, dropdown.html, search.html,
+    │               popover.html, filter-list.html, empty-state.html, stepper.html,
+    │               timeline.html, toast-container.html
+    ├── forms/      form.html, field.html, upload.html
+    ├── tables/     table.html
+    ├── containers/ data-coordinator.html, data-coordinator-nested.html
+    └── modules/    crud.html
 ```
 
----
-
-## 🎯 Строги правила и конвенции за генерирање
-
-1. **TAB Индентација (`\t`)**:
-   * Сите генерирани HTML снипети користат **исклучиво TABS (`\t`)** за индентација. Спејсовите на почеток на ред се забранети.
-2. **Семантички DOM-first атрибути на `ln-ashlar`**:
-   * **Modals (Layer 1)**: `<dialog data-ln-modal data-ln-modal-mode="new" id="modalId">`
-   * **Modal Coordinator (Layer 2)**: `ln-modal-coordinator` (лоциран во `js/ln-modal-coordinator/src/ln-modal-coordinator.js`) кој е document-level singleton за ракување со `[data-ln-modal-for]` тригери, URL hash навигација (`#modalId:id`), пополнување на форми преку `lnCore.fill` и ресетирање по `ln-form:success`.
-   * **Form Modal**: `<form data-ln-form data-ln-form-scope="resource">` е **директен прв child** на `<dialog>`.
-   * **Modal Titles**: `<h2 class="ln-modal-title"><span data-ln-modal-when="new">Нов...</span><span data-ln-modal-when="edit">Уреди...</span></h2>`
-   * **Modal Triggers & Close**:
-     * За отворање: `<a href="#modalId" data-ln-modal-for="modalId">`
-     * За затворање: `<a href="#" data-ln-modal-close>`
-   * **Data Coordinator**: `<ul data-ln-data-coordinator="resource">` со вгнездени:
-     * `<li data-ln-data-store="resource" data-ln-store-indexes="..."></li>` (Local IndexedDB Cache)
-     * `<li data-ln-api-connector="resource" data-ln-api-url="..."></li>` (API Connector)
-   * **Dictionary**: `<ul hidden data-ln-dictionary="name">` со `<li data-ln-dict-key="...">`
+Поток: `generate_ln_*.js` (zod схема) → `builders.js` (чист HTML) → `mcp.js` (fence).
+Компонирањето оди меѓу builder-ите директно — никогаш преку парсирање на туѓ MCP излез.
 
 ---
 
-## 🧰 Каталог на MCP Алатки (13 Алатки)
+## Врската со ln-ashlar
 
-### 1. `generate_ln_page`
-Генерира комплетна HTML страница (Page Shell) за SSR или SPA/Data-driven режими со header, footer и toast контејнер.
-* **Влезни параметри**: `title`, `render_mode` (`"ssr"` | `"spa"` | `"data-driven"`), `theme`, `lang`, `include_header`, `include_footer`.
+Атрибутите **не се измислуваат**. `attributes.generated.js` се гради од вистинскиот код:
 
-### 2. `generate_ln_crud_module` *(Композициска Алатка)*
-Генерира комплетен Local-First CRUD модул во еден фајл. Ги комбинира Data Coordinator, Table со Поповер филтри, Modal со Форма и Dictionary.
-* **Влезни параметри**: `id`, `resource`, `resource_title`, `resource_singular`, `api_url`, `columns`, `form_fields`.
-
-### 3. `generate_ln_data_coordinator`
-Генерира `<ul data-ln-data-coordinator="resource">` омот со `<li data-ln-data-store>` и `<li data-ln-api-connector>`.
-* **Влезни параметри**: `id`, `resource`, `api_url`, `store_indexes`, `children_html`.
-
-### 4. `generate_ln_modal`
-Генерира `<dialog data-ln-modal data-ln-modal-mode="new">`. Доколку има форма, `<form data-ln-form>` е директен прв child.
-* **Влезни параметри**: `id`, `resource`, `title_singular`, `title_new`, `title_edit`, `form_config`.
-
-### 5. `generate_ln_form`
-Генерира `<form data-ln-form data-ln-form-scope="resource">` со полиња и валидациски грешки (`data-ln-validate-errors`).
-* **Влезни параметри**: `id`, `action`, `method`, `scope`, `submit_label`, `cancel_label`, `fields`.
-
-### 6. `generate_ln_table`
-Генерира SSR или Data-Driven табела (`data-ln-table`) со сортирање, поповери и `<template>` за редови.
-* **Влезни параметри**: `id`, `name`, `mode`, `source`, `selectable`, `columns`.
-
-### 7. `generate_ln_search`
-Генерира Search инпут снипет со `data-ln-search` и `data-ln-search-items`.
-* **Влезни параметри**: `id`, `target_id`, `search_items`, `placeholder`.
-
-### 8. `generate_ln_popover`
-Генерира Popover контејнер со `data-ln-popover`.
-* **Влезни параметри**: `id`, `content_html`, `hidden`.
-
-### 9. `generate_ln_dictionary`
-Генерира `<ul hidden data-ln-dictionary="name">` со системски преводи и грешки.
-* **Влезни параметри**: `id`, `name`, `entries`.
-
-### 10. `generate_ln_card`
-Генерира картичка со header, body и action-buttons.
-* **Влезни параметри**: `id`, `title`, `subtitle`, `badge`, `content`, `actions`.
-
-### 11. `generate_ln_accordion`
-Генерира акордеон со N панели (`data-ln-accordion`).
-* **Влезни параметри**: `id`, `panels`.
-
-### 12. `generate_ln_tabs`
-Генерира табови со URL hash синхронизација (`data-ln-tabs`).
-* **Влезни параметри**: `id`, `default_tab`, `tabs`.
-
-### 13. `generate_ln_dropdown`
-Генерира dropdown мени (`data-ln-dropdown`).
-* **Влезни параметри**: `id`, `trigger_label`, `items`.
-
----
-
-## ⚙️ Поврзување во MCP Серверот
-
-Сите алатки во `tools/generate_ln_*.js` се автоматски детектирани и регистрирани од страна на [`server.js`](file:///home/mcp/server/server.js).
-
-За локално тестирање на сите алатки, стартувајте:
 ```bash
-node -e "import { handler } from './tools/generate_ln_crud_module.js'; handler({ id: 'test', resource: 'users', resource_title: 'Users', resource_singular: 'User' }).then(res => console.log(res.content[0].text));"
+npm run sync:ln-attrs                        # чита DOCS_CORPUS_ROOTS / ASHLAR_DOCS_REPO
+npm run sync:ln-attrs -- --root=/пат/до/ln-ashlar
+npm run sync:ln-attrs -- --check             # не пишува; exit 1 ако е застарен
+```
+
+Изворот е **`js/**` + `scss/**`** — кодот што навистина чита атрибути — а не
+`docs-mcp/schemas/ln-ashlar-attributes-schema.json`. Схемата заостанува зад кодот
+(нема `data-ln-table-body`, `data-ln-table-store`, `data-ln-table-col-sort-icon`
+иако `ln-table` ги чита). Скриптот печати и drift извештај во двете насоки.
+
+Резултатот е **committed**: серверот мора да работи и кога ln-ashlar репозиториумот
+не е достапен (`configuredRoots()` враќа `[]` — види `test/knowledge-unconfigured.test.js`).
+
+`test/snippets.test.js` паѓа ако некој генератор емитува атрибут што го нема во
+`KNOWN_LN_ATTRS`. Тоа е механизмот што спречува повторен дрифт.
+
+> Што guard-от **не** фаќа: валиден-но-погрешен атрибут. Ако колоната добие
+> `data-ln-table-col` но не и `data-ln-table-sort`, сите атрибути се вистински, а
+> сортирањето е мртво. Тоа го покриваат golden-output тестовите во истиот фајл.
+
+---
+
+## Правила на енџинот
+
+| | Escape | Ре-индентација |
+|---|---|---|
+| `{{key}}` (`data`) | **да**, освен `raw(...)` | не |
+| `<!-- KEY_SLOT -->` (`slots`) | не — примаат готов markup | **да**, според позицијата на маркерот |
+
+- Повеќередова содржина оди во **слот**, не во `{{var}}` — само слотовите се ре-индентираат.
+- Атрибут-фрагменти се вметнуваат со `raw(attr(ATTR.x, value))`.
+- Неисполнетите `{{ }}` **остануваат недопрени** — `{{ price }}` е валидна ln-ashlar
+  `fillTemplate` синтакса (види `ln-table.md`), а корисничката содржина може да носи
+  Blade/Vue изрази.
+- Индентацијата е исклучиво TAB.
+
+---
+
+## Каталог на алатки (18)
+
+### Композициски
+| Алатка | Опис |
+|---|---|
+| `generate_ln_crud_module` | Комплетен Local-First CRUD: modal coordinator + data coordinator + табела + модал со форма |
+| `generate_ln_page` | Page shell со header, footer, toast; тема преку `data-theme` на `<html>` |
+
+### Податочен слој
+| Алатка | Опис |
+|---|---|
+| `generate_ln_data_coordinator` | Store + API connector + i18n речник. Со деца: `<div>` без `hidden`; празен: `<ul hidden>` |
+| `generate_ln_table` | SSR/data-driven табела. Сортирање бара `data-ln-table-sort` на `<th>`, селекција бара `data-ln-table-selectable` на коренот |
+| `generate_ln_dictionary` | `<ul hidden>` со `<li data-ln-{component}-dict="key">` — мора да е внатре во компонентата што го чита |
+
+### Форми
+| Алатка | Опис |
+|---|---|
+| `generate_ln_form` | `data-ln-form-action-edit` е **патека-темплејт** (`/api/users/:id`), не булов атрибут |
+| `generate_ln_modal` | `<dialog>` обвиткан во `<section data-ln-modal-coordinator>` — без тој предок тригерите се мртви |
+| `generate_ln_upload` | `data-ln-upload` ја носи endpoint URL вредноста |
+
+### Компоненти
+`generate_ln_accordion`, `generate_ln_tabs`, `generate_ln_dropdown`, `generate_ln_search`,
+`generate_ln_popover`, `generate_ln_empty_state`, `generate_ln_card`, `generate_ln_stat_card`,
+`generate_ln_stepper`, `generate_ln_timeline`
+
+`stat-card` и `stepper` ги следат direct-child селекторите од
+`scss/config/mixins/` — не вгнездувај ги во дополнителни `<div>`-ови.
+Кај `stepper` редниот број го рендерира CSS counter, не markup-от.
+
+`card` и `timeline` немаат JS компонента во ln-ashlar — тие се чист семантички
+HTML со CSS класи.
+
+---
+
+## Локално тестирање
+
+```bash
+npm test
+node -e "import('./tools/generate_ln_crud_module.js').then(m=>m.handler({id:'u',resource:'users',resource_title:'Корисници',resource_singular:'Корисник',columns:[{field:'name',label:'Име',sortable:true}],form_fields:[{name:'name',label:'Име',required:true}]}).then(r=>console.log(r.content[0].text)))"
 ```

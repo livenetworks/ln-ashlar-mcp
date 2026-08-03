@@ -1,49 +1,32 @@
 import { z } from "zod";
-import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
+import { loadTemplate, compileTemplate, raw, escapeHtml } from "./snippets/template_engine.js";
+import { flag } from "./snippets/builders.js";
+import { htmlResult } from "./snippets/mcp.js";
 
 export const name = "generate_ln_popover";
 
 export const definition = {
 	title: "Generate ln-ashlar Popover",
 	description:
-		"Генерира data-ln-popover контејнер снипет од темплејтот во _src/components/popover.html. " +
-		"Може да содржи филтри, пребарување, листи или обична содржина. Се поврзува преку data-ln-popover-for.",
+		"Генерира data-ln-popover контејнер. Се отвора од тригер со data-ln-popover-for=\"{id}\". " +
+		"Може да содржи филтри, пребарување или обична содржина.",
 	inputSchema: {
-		id: z.string().describe("Уникатен ID за поповерот (се совпаѓа со data-ln-popover-for)"),
+		id: z.string().describe("Уникатен ID (се совпаѓа со data-ln-popover-for на тригерот)"),
 		custom_class: z.string().optional().describe("Дополнителни CSS класи"),
-		hidden: z.boolean().default(false).describe("Дали поповерот е скриен по подразбирање"),
-		content_html: z.string().optional().describe("Вгнездена HTML содржина (на пр. филтер или search снипет)")
+		hidden: z.boolean().default(false).describe("Дали е скриен по подразбирање"),
+		content_html: z.string().optional().describe("Вгнездена HTML содржина")
 	}
 };
 
-export const handler = async ({
-	id,
-	custom_class = "",
-	hidden = false,
-	content_html = ""
-}) => {
-	const popoverTpl = loadTemplate("components/popover.html");
-	const customClassStr = custom_class ? ` ${custom_class}` : "";
-	const hiddenAttr = hidden ? " hidden" : "";
-
-	const htmlOutput = compileTemplate(
-		popoverTpl,
-		{
-			id,
-			custom_class: customClassStr,
-			hidden_attr: hiddenAttr
-		},
-		{
-			content: content_html
-		}
-	);
-
-	return {
-		content: [
+export const handler = async ({ id, custom_class, hidden = false, content_html = "" }) =>
+	htmlResult(
+		compileTemplate(
+			loadTemplate("components/popover.html"),
 			{
-				type: "text",
-				text: `\`\`\`html\n${htmlOutput}\n\`\`\``
-			}
-		]
-	};
-};
+				id,
+				custom_class: raw(custom_class ? ` ${escapeHtml(custom_class)}` : ""),
+				hidden_attr: raw(flag("hidden", hidden))
+			},
+			{ content: content_html }
+		)
+	);
