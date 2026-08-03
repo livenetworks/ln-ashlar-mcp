@@ -3,7 +3,7 @@ import { loadTemplate, compileTemplate, raw, escapeHtml } from "./snippets/templ
 import { attr } from "./snippets/builders.js";
 import { ATTR } from "./snippets/attributes.generated.js";
 import { htmlResult } from "./snippets/mcp.js";
-import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/router-contract.js";
 
 export const name = "generate_ln_stat_card";
 

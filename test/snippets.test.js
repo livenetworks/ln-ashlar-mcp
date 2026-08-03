@@ -2,7 +2,8 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath, pathToFileURL } from "url";
 import { z } from "zod";
 
 import { KNOWN_LN_ATTRS, ATTR } from "../tools/snippets/attributes.generated.js";
@@ -74,7 +75,6 @@ describe("attribute conformance", () => {
 
 describe("attributes.generated.js е свеж", { skip: configuredRoots().length ? false : "корпусот не е конфигуриран" }, () => {
 	test("--check не пријавува дрифт", async () => {
-		const { execFileSync } = await import("node:child_process");
 		try {
 			execFileSync(process.execPath, [path.join(REPO_ROOT, "scripts", "sync-ln-attrs.js"), "--check"], {
 				cwd: REPO_ROOT,
@@ -131,15 +131,23 @@ describe("template engine", () => {
 		assert.deepEqual(mixed, [], `редови со мешана индентација:\n${mixed.join("\n")}`);
 	});
 
-	test("темплејтите се вчитуваат независно од cwd", async () => {
-		const original = process.cwd();
-		try {
-			process.chdir(path.parse(REPO_ROOT).root);
-			const html = await runTool("generate_ln_search.js", { id: "s", target_id: "t" });
-			assert.match(html, /data-ln-search="t"/);
-		} finally {
-			process.chdir(original);
-		}
+	test("темплејтите се вчитуваат независно од cwd", () => {
+		// Во дете-процес со друг cwd, не преку process.chdir(): мутирањето на cwd
+		// на тековниот процес е видливо за секој друг тест што трча паралелно.
+		// Свеж процес го тестира и вистинскиот пат — модулот се иницијализира од нула.
+		const toolUrl = pathToFileURL(path.join(REPO_ROOT, "tools", "generate_ln_search.js")).href;
+		const out = execFileSync(
+			process.execPath,
+			[
+				"--input-type=module",
+				"-e",
+				`import(${JSON.stringify(toolUrl)})` +
+					`.then((m) => m.handler({ id: "s", target_id: "t" }))` +
+					`.then((r) => process.stdout.write(r.content[0].text))`
+			],
+			{ cwd: path.parse(REPO_ROOT).root, encoding: "utf-8" }
+		);
+		assert.match(out, /data-ln-search="t"/);
 	});
 });
 

@@ -11,27 +11,14 @@
 //   - ROUTER_FIRST_HINT → prefixed onto the descriptions of the corpus lookup
 //     tools, so the rule is restated at the moment a component is chosen.
 
-import { ensureIndex, ROUTER_FILENAME } from './corpus.js';
+import { ensureIndex } from './corpus.js';
+import { ROUTER_FILENAME, ROUTING_PREAMBLE, ROUTER_FIRST_HINT } from './router-contract.js';
 
-/**
- * Enforcement framing only. The routing steps themselves are NOT repeated
- * here — every component-router.md opens with its own "Routing rule" block,
- * so duplicating it would cost tokens on every session and drift over time.
- */
-export const ROUTING_PREAMBLE = `MANDATORY ROUTING CONTRACT
-
-Before you emit any UI markup, and before you call get_markup or any
-generate_ln_* tool, select the component from the routing matrix below.
-
-- Never invent HTML structure, CSS classes or data-ln-* attributes, and never
-  hand-roll behaviour a component already owns.
-- This matrix is served live from the documentation corpus. It is authoritative
-  over any prior knowledge you have about these components.
-- Follow the routing steps stated at the top of each matrix.`;
-
-/** Restates the contract on the tool descriptions that precede markup output. */
-export const ROUTER_FIRST_HINT =
-  '[Router-first: pick the component from the routing contract in the server instructions (or call get_component_router) before using this.] ';
+// The constants live in the dependency-free ./router-contract.js so a caller
+// that only needs the text — every generate_ln_* tool description — does not
+// pull this module's corpus graph. Re-exported here so existing importers of
+// instructions.js keep working unchanged.
+export { ROUTER_FILENAME, ROUTING_PREAMBLE, ROUTER_FIRST_HINT };
 
 /**
  * Render one root's routing matrix with a header identifying its corpus root,

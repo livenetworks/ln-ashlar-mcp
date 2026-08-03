@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { buildEmptyState } from "./snippets/builders.js";
 import { htmlResult } from "./snippets/mcp.js";
-import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/router-contract.js";
 
 export const name = "generate_ln_empty_state";
 

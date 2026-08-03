@@ -16,8 +16,10 @@ const SKILL_CONTEXTS = ['app', 'web', 'wordpress'];
 // The routing contract: a top-level file per corpus root, served verbatim as
 // the MCP session `instructions` and by get_component_router. Read raw and
 // deliberately kept OUT of the document index — see tools/ashlar/README.md
-// "Bootstrap routing contract".
-export const ROUTER_FILENAME = 'component-router.md';
+// "Bootstrap routing contract". Declared in the dependency-free
+// ./router-contract.js; re-exported here so existing importers keep working.
+export { ROUTER_FILENAME } from './router-contract.js';
+import { ROUTER_FILENAME } from './router-contract.js';
 
 let cachedIndex = null;
 let cachedRootsKey = null;

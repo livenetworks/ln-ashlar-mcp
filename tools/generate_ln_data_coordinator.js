@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { buildCoordinator, COORDINATOR_DICT_ENTRIES } from "./snippets/builders.js";
 import { htmlResult } from "./snippets/mcp.js";
-import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/router-contract.js";
 
 export const name = "generate_ln_data_coordinator";
 
