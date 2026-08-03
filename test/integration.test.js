@@ -63,7 +63,14 @@ function waitForServerReady(proc, timeoutMs = 10000) {
 before(async () => {
   serverProcess = spawn('node', ['server.js'], {
     cwd: path.resolve(__dirname, '..'),
-    env: { ...process.env, PORT: String(PORT) },
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      // The server no longer defaults to resources/ln-ashlar — the corpus root
+      // is configuration, so the test supplies its own fixture root.
+      DOCS_CORPUS_ROOTS: path.resolve(__dirname, 'fixtures', 'ashlar-repo'),
+      ASHLAR_DOCS_REPO: ''
+    },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   await waitForServerReady(serverProcess);
@@ -182,6 +189,34 @@ test('POST /knowledge/reload with valid auth returns reloaded:true and a doc cou
   assert.equal(body.reloaded, true);
   assert.equal(typeof body.docs, 'number');
   assert.ok(body.docs >= 0);
+});
+
+test('initialize carries the routing contract in result.instructions', async () => {
+  const res = await fetch(`${BASE_URL}/mcp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
+      Authorization: `Bearer ${issuedAccessToken}`
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-11-25',
+        capabilities: {},
+        clientInfo: { name: 'integration-test-client', version: '1.0.0' }
+      }
+    })
+  });
+
+  assert.equal(res.status, 200);
+  // The response is JSON or an SSE frame depending on negotiation; the payload
+  // is JSON-encoded either way, so match the marker text in the raw body.
+  const text = await res.text();
+  assert.match(text, /MANDATORY ROUTING CONTRACT/);
+  assert.match(text, /FIXTURE-ROUTER-ROOT-ONE/, 'fixture root component-router.md body must be injected');
 });
 
 test('MCP session binding: a second user reusing the first user\'s session id gets 403', async () => {

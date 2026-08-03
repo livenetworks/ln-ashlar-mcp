@@ -2,7 +2,8 @@
 import express from 'express';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
-import { search, rebuildIndex } from './search.js';
+import { search, rebuildIndex, docCount } from './search.js';
+import { notConfiguredMessage } from '../ashlar/corpus.js';
 
 const router = express.Router();
 
@@ -30,6 +31,9 @@ router.get('/search', (req, res) => {
   const query = req.query.q;
   if (!query) {
     return res.status(400).json({ error: 'Missing query parameter q' });
+  }
+  if (docCount() === 0) {
+    return res.status(503).json({ error: 'not_configured', error_description: notConfiguredMessage() });
   }
   const results = search(query);
   res.json({ query, results });

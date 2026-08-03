@@ -2,12 +2,14 @@ import { z } from "zod";
 import { ensureIndex, notConfiguredMessage } from "./ashlar/corpus.js";
 import { closest } from "./ashlar/similar.js";
 import { findByName, renderAmbiguous } from "./ashlar/resolve.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "get_markup";
 
 export const definition = {
   title: "Get Markup",
   description:
+    ROUTER_FIRST_HINT +
     "Return the canonical markup for a component or pattern. Without 'variant', returns " +
     "the base markup plus a list of available variant titles. With 'variant' (case-insensitive " +
     "substring match against variant titles), returns that specific variant's code block. " +

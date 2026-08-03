@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { ensureIndex, notConfiguredMessage } from "./ashlar/corpus.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "search_docs";
 
 export const definition = {
   title: "Search Docs",
   description:
+    ROUTER_FIRST_HINT +
     "Full-text fuzzy search over every section of the indexed ln-ashlar docs-mcp corpus " +
     "(components, css, patterns, guides, doctrine, skills — across all configured corpus " +
     "roots). Returns matching sections as '- **<doc>** › <heading>: <snippet>' lines with the " +

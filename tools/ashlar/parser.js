@@ -4,8 +4,8 @@
 // structured data (sections, attribute/event tables, markup blocks, links).
 //
 // Contract (English, 2026-07-11 decision): all normative headings/tables are
-// authored in English. See resources/ln-ashlar/docs-mcp/README.md +
-// _templates/*.md — those templates are authoritative.
+// authored in English. See <root>/docs-mcp/README.md + _templates/*.md in any
+// configured corpus root — those templates are authoritative.
 
 import { parseFrontmatter } from './frontmatter.js';
 

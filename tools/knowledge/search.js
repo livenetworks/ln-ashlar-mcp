@@ -38,6 +38,16 @@ export function rebuildIndex() {
 }
 
 /**
+ * Number of markdown documents currently indexed. Zero means no corpus root
+ * is configured or none was readable — callers surface that as such instead
+ * of reporting an empty result set.
+ * @returns {number}
+ */
+export function docCount() {
+  return docs.length;
+}
+
+/**
  * Perform a fuzzy search over the markdown documentation.
  * @param {string} query – search term
  * @param {number} [limit=10] – maximum results to return

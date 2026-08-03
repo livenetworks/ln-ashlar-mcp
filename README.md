@@ -37,19 +37,81 @@ cp config/jwt.example.json config/jwt.json
   gemini-cli оди преку gemini-cli-ните сопствени енкриптирани credentials во
   runner-овиот `HOME` (`~/.gemini/gemini-credentials.json`), не преку овој репо.
 
+## Корпус — каде живее документацијата
+
+Серверот НЕМА вградена локација за документацијата. Каде се наоѓа ln-ashlar
+(и кој било друг продукт-репо со `docs-mcp/` фолдер) го одредува **една
+променлива на околината**:
+
+- `DOCS_CORPUS_ROOTS` — comma-separated листа на **репо-корени** (не на
+  `docs-mcp` подфолдерот). Секој корен се чита само ако има `docs-mcp/`.
+- `ASHLAR_DOCS_REPO` — легаси еднокорен fallback, се користи само кога
+  `DOCS_CORPUS_ROOTS` не е поставена.
+
+Ист knob ги храни сите потрошувачи — ashlar алатките
+(`tools/ashlar/corpus.js`, `configuredRoots()`), legacy knowledge индексот
+(`tools/knowledge/loader.js`) и `get_ln_schema`. Нема резервна копија во
+репово: ако ниту еден корен не ја носи шемата, `get_ln_schema` враќа грешка
+наместо застарен одговор.
+
+Ако променливата не е поставена, серверот сепак се крева — алатките
+пријавуваат „not configured" наместо да паднат.
+
+### Routing contract — `docs-mcp/component-router.md`
+
+Секој корен **треба** да носи `docs-mcp/component-router.md` — матрица за избор
+на компонента (за што се користи, за што НЕ се користи). Тоа е единствениот
+top-level фајл што серверот го **служи без да го индексира како документ**:
+
+- Телото му се инјектира verbatim во MCP `instructions` при `initialize`
+  (`tools/ashlar/instructions.js`, `buildInstructions()`). Тоа е единствениот
+  push канал во MCP — клиентот го става во system prompt-от на моделот пред
+  првиот токен, без ниту еден tool повик. Со тоа моделот ја знае точната
+  компонента однапред, наместо да прелистува документација и да погодува.
+- Истата матрица се служи и на барање преку MCP алатката `get_component_router`
+  (опционален `root` за еден корен).
+- Описите на `get_markup`, `get_component`, `list_components` и `search_docs`
+  го повторуваат правилото (`ROUTER_FIRST_HINT`) — втора ограда токму во
+  моментот кога се бира компонента.
+
+Се чита сурово: **нема frontmatter**, не поминува низ `parseDoc()` и намерно НЕ
+влегува во `docs`/`registry`/`byName`/`fuse`. Двете причини: не му треба
+frontmatter, и името не смее да се судри со вистинската `ln-router` компонента
+во `components/`.
+
+Федерација: N корени ⇒ N секции во `instructions`, секоја со заглавје
+`--- <rootLabel> / component router ---`, по редот на `DOCS_CORPUS_ROOTS`.
+Корен без таков фајл е легален — само не придонесува секција (се логира
+`console.warn`). Кога ниту еден корен нема, серверот воопшто не праќа
+`instructions`.
+
+`instructions` се градат **по сесија**, не при подигање — значи commit во
+корпусот стигнува до следната сесија без рестарт на серверот (важи истото
+git-HEAD правило од „Освежување на документацијата" подолу).
+
+Клон во `resources/` е една можна поставка, не барање. Локално може директно
+да се покаже на работниот checkout:
+
+```bash
+DOCS_CORPUS_ROOTS=/пат/до/ln-ashlar node server.js
+```
+
+```powershell
+$env:DOCS_CORPUS_ROOTS = 'c:/laragon/www/ln-ashlar'; node server.js
+```
+
 ## Стартување
 
 ```bash
-PORT=8080 node server.js
+DOCS_CORPUS_ROOTS=/пат/до/ln-ashlar PORT=8080 node server.js
 ```
 
 Серверот слуша на `0.0.0.0:<PORT>` (по default `8080`).
 
 **Напомена:** серверот НЕ прави hot-reload на JS кодот — секоја промена во
 `server.js`, `routes/`, `middleware/` или `tools/` бара рестарт на процесот
-за да влезе во сила. Единствен исклучок е содржината на knowledge базата
-(`resources/ln-ashlar/**/*.md`) и корисниците во `config/auth.json` — тие
-можат да се освежат без рестарт (видете подолу).
+за да влезе во сила. Исклучок се содржината на корпусот и корисниците во
+`config/auth.json` — тие можат да се освежат без рестарт (видете подолу).
 
 ## Преглед на endpoints
 
@@ -85,10 +147,19 @@ query параметри — само на `/sse` и `/messages`) или как�
 
 ### Knowledge база
 
-- `GET /knowledge/search?q=<термин>` — fuzzy пребарување низ маркдаун
-  документацијата (`resources/ln-ashlar`). Истата споделена `search()`
-  функција (`tools/knowledge/search.js`) ја користат и REST рутата и MCP
-  алатката `knowledge_search`.
+Legacy индекс над **сите** `.md` фајлови во конфигурираните корени — вклучно
+internals слојот (`js/ln-*/README.md`, `docs/architecture/`) што ashlar
+корпусот намерно не го индексира. Комплементарен е на `search_docs`, не
+дупликат. `node_modules/` и `.git/` се прескокнуваат.
+
+Патеките во резултатите се префиксирани со ознаката на коренот
+(`ln-ashlar/docs/css/mixins.md`) за да останат недвосмислени кога има повеќе
+корени; `knowledge_read` прифаќа и таква и обична репо-релативна патека.
+
+- `GET /knowledge/search?q=<термин>` — fuzzy пребарување. Истата споделена
+  `search()` функција (`tools/knowledge/search.js`) ја користат и REST рутата
+  и MCP алатката `knowledge_search`. Кога нема конфигуриран корен враќа `503`
+  со `not_configured`.
 - `POST /knowledge/reload` — повторно вчитува ги `.md` фајловите од диск и
   го преградува Fuse индексот, без рестарт на процесот. Враќа
   `{ reloaded: true, docs: <број на документи> }`. Секој reload се логира
@@ -134,9 +205,18 @@ prompt-от и одговорот, што може да се исклучи со
 
 ## Освежување на документацијата
 
-Промена на `.md` фајловите во `resources/ln-ashlar/` не бара рестарт —
-повикај `POST /knowledge/reload` (со валидна автентикација) за да се
-превчитаат документите и да се преизгради пребарувачкиот индекс.
+Двата индекса имаат **различни** модели на свежина — ниту еден не бара рестарт,
+но не се освежуваат на ист начин:
+
+- **Legacy knowledge индекс** (`/knowledge/*`, `knowledge_search`,
+  `knowledge_read`) — превчитување на барање: повикај `POST /knowledge/reload`
+  со валидна автентикација. Ги фаќа и некомитираните измени на диск.
+- **Ashlar корпус** (`search_docs`, `get_component`, `get_markup`,
+  `validate_docs`, `get_ln_schema`, …) — се превчитува автоматски кога ќе се
+  смени git HEAD на коренот (`gitSignature()`, `tools/ashlar/corpus.js`).
+  Значи **некомитирана** измена во коренот НЕ се гледа, ни по `reload`;
+  промената влегува дури откако е commit-ирана (и на серверот — откако тој
+  ќе pull-ира).
 
 ## Тестови
 
@@ -146,13 +226,21 @@ prompt-от и одговорот, што може да се исклучи со
 npm test
 ```
 
-- `test/unit.test.js` — `secureCompare`, `escapeHtml`, `isAllowedRedirect`,
-  заштита од path traversal во `knowledge_read` alatkata.
+- `test/unit.test.js` — `secureCompare`, `escapeHtml`, `isAllowedRedirect`.
+- `test/ashlar-router.test.js` — routing contract-от: вчитување по корен,
+  корен без контракт, гаранцијата дека НЕ се индексира како документ,
+  `buildInstructions()` payload-от и `get_component_router` (сите корени,
+  `root` филтер, непознат корен, неконфигуриран).
+- `test/knowledge-roots.test.js` — резолуција на корпус-корените во legacy
+  knowledge слојот: индексирање со root-префикс низ два фикстур-корена,
+  обете форми на патека во `knowledge_read`, заштита од path traversal.
+- `test/knowledge-unconfigured.test.js` — со празна `DOCS_CORPUS_ROOTS`:
+  import ланецот не фрла, а алатките пријавуваат „not configured".
 - `test/integration.test.js` — стартува реален `node server.js` процес на
-  `PORT=8099`, го тестира целосниот OAuth + PKCE flow, `/mcp` автентикација,
-  `/knowledge/search`, `/knowledge/reload` и врзувањето на MCP сесиите за
-  корисник. Процесот се убива автоматски по завршувањето на тестовите
-  (вклучително и при неуспех).
+  `PORT=8099` (со фикстур-корен во `DOCS_CORPUS_ROOTS`), го тестира целосниот
+  OAuth + PKCE flow, `/mcp` автентикација, `/knowledge/search`,
+  `/knowledge/reload` и врзувањето на MCP сесиите за корисник. Процесот се
+  убива автоматски по завршувањето на тестовите (вклучително и при неуспех).
 
 Интеграцискиот тест ги чита реалните креденцијали од `config/auth.json` во
 времето на извршување — не ги хардкодирај во тестовите.

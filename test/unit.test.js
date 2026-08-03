@@ -2,7 +2,6 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { secureCompare } from '../middleware/secure-compare.js';
 import { escapeHtml, isAllowedRedirect } from '../routes/oauth.js';
-import { handler as knowledgeReadHandler } from '../tools/knowledge_read.js';
 
 describe('secureCompare', () => {
   test('returns true for equal strings', () => {
@@ -70,17 +69,5 @@ describe('isAllowedRedirect', () => {
   });
 });
 
-describe('knowledge_read path traversal protection', () => {
-  test('rejects a path traversal attempt', async () => {
-    const result = await knowledgeReadHandler({ filePath: '../../../etc/passwd' });
-    assert.equal(result.isError, true);
-    assert.match(result.content[0].text, /Access denied/);
-  });
-
-  test('allows a legitimate relative path within the docs root', async () => {
-    const result = await knowledgeReadHandler({ filePath: 'README.md' });
-    assert.equal(result.isError, undefined);
-    assert.equal(typeof result.content[0].text, 'string');
-    assert.ok(result.content[0].text.length > 0);
-  });
-});
+// knowledge_read (path traversal + root resolution) is covered in
+// knowledge-roots.test.js, which needs a configured corpus root.

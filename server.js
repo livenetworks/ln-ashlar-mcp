@@ -12,14 +12,8 @@ import authMiddleware from "./middleware/auth.js";
 import oauthRouter from "./routes/oauth.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { buildInstructions } from "./tools/ashlar/instructions.js";
 import { pathToFileURL } from 'url';
-
-if (!process.env.DOCS_CORPUS_ROOTS && !process.env.ASHLAR_DOCS_REPO) {
-  const defaultPath = path.resolve(import.meta.dirname, 'resources/ln-ashlar');
-  if (fs.existsSync(path.join(defaultPath, 'docs-mcp'))) {
-    process.env.DOCS_CORPUS_ROOTS = defaultPath;
-  }
-}
 
 const app = express();
 app.use(express.json());
@@ -144,12 +138,18 @@ try {
   console.error('Failed to read tools directory:', e);
 }
 
-// Factory function to instantiate a new McpServer instance per connection
-const createMcpServer = () => {
-  const server = new McpServer({
-    name: "mcp-http-server",
-    version: "1.0.0"
-  });
+// Factory function to instantiate a new McpServer instance per connection.
+// Async because the routing contract is read from the corpus per session — so
+// a corpus commit reaches the next session without a server restart.
+const createMcpServer = async () => {
+  const instructions = await buildInstructions();
+  const server = new McpServer(
+    {
+      name: "mcp-http-server",
+      version: "1.0.0"
+    },
+    instructions ? { instructions } : undefined
+  );
 
   // Register all pre-loaded tools dynamically
   for (const tool of registeredTools) {
@@ -243,7 +243,7 @@ app.all(['/', '/mcp'], async (req, res) => {
           delete sessionUsers[sid];
         }
       };
-      const serverInstance = createMcpServer();
+      const serverInstance = await createMcpServer();
       await serverInstance.connect(transport);
     } else {
       return res.status(400).json({
@@ -285,7 +285,7 @@ app.get('/sse', async (req, res) => {
     delete transports[transport.sessionId];
     delete sessionUsers[transport.sessionId];
   });
-  const serverInstance = createMcpServer();
+  const serverInstance = await createMcpServer();
   await serverInstance.connect(transport);
 });
 

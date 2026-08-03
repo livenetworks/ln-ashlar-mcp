@@ -1,14 +1,17 @@
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { configuredRoots, notConfiguredMessage } from "./ashlar/corpus.js";
 
 export const name = "get_ln_schema";
+
+const SCHEMA_REL_PATH = "docs-mcp/schemas/ln-ashlar-attributes-schema.json";
 
 export const definition = {
 	title: "Get ln-ashlar JSON Schema for Components & Attributes",
 	description:
 		"Враќа машина-читлива JSON Шема на сите data-ln-* атрибути за одредена или за сите ln-ashlar компоненти. " +
-		"Се вчитува директно од ажурираниот репозиториум во resources/ln-ashlar/docs-mcp/schemas/ln-ashlar-attributes-schema.json.",
+		"Се вчитува директно од докс-корпусот на конфигурираниот репозиториум (docs-mcp/schemas/ln-ashlar-attributes-schema.json).",
 	inputSchema: {
 		component_name: z
 			.string()
@@ -18,18 +21,22 @@ export const definition = {
 };
 
 export const handler = async ({ component_name }) => {
-	const primarySchemaPath = path.resolve("resources/ln-ashlar/docs-mcp/schemas/ln-ashlar-attributes-schema.json");
-	const fallbackSchemaPath = path.resolve("tools/snippets/schemas/ln-ashlar-attributes-schema.json");
-
-	let schemaPath = primarySchemaPath;
-	if (!fs.existsSync(schemaPath)) {
-		schemaPath = fallbackSchemaPath;
-	}
-
-	if (!fs.existsSync(schemaPath)) {
+	const roots = configuredRoots().map((r) => path.resolve(r));
+	if (!roots.length) {
 		return {
 			isError: true,
-			content: [{ type: "text", text: "JSON шемата не е пронајдена." }]
+			content: [{ type: "text", text: notConfiguredMessage([]) }]
+		};
+	}
+
+	// First root that carries the schema wins — no in-repo copy to fall back on,
+	// a missing schema is an error, never a silently stale answer.
+	const schemaPath = roots.map((r) => path.join(r, SCHEMA_REL_PATH)).find((p) => fs.existsSync(p));
+
+	if (!schemaPath) {
+		return {
+			isError: true,
+			content: [{ type: "text", text: `JSON шемата не е пронајдена: ${SCHEMA_REL_PATH} не постои во ниту еден конфигуриран корен (${roots.join(", ")}).` }]
 		};
 	}
 

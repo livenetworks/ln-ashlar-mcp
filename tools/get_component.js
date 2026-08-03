@@ -2,12 +2,14 @@ import { z } from "zod";
 import { ensureIndex, notConfiguredMessage } from "./ashlar/corpus.js";
 import { closest } from "./ashlar/similar.js";
 import { findByName, renderAmbiguous } from "./ashlar/resolve.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "get_component";
 
 export const definition = {
   title: "Get Component",
   description:
+    ROUTER_FIRST_HINT +
     "Return the full raw markdown (frontmatter + body, verbatim) for a single ln-ashlar docs-mcp " +
     "document by its registered name. When the same name exists in more than one configured " +
     "corpus root, an optional 'domain' input disambiguates; without it, an ambiguous name " +

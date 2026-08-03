@@ -1,4 +1,5 @@
-import { search } from "./knowledge/search.js";
+import { search, docCount } from "./knowledge/search.js";
+import { notConfiguredMessage } from "./ashlar/corpus.js";
 import { z } from "zod";
 
 export const name = "knowledge_search";
@@ -45,6 +46,12 @@ If you need to read the full file contents of any documentation file (e.g., mixi
 
 export const handler = async ({ q, limit }) => {
   try {
+    if (docCount() === 0) {
+      return {
+        content: [{ type: "text", text: notConfiguredMessage() }],
+        isError: true
+      };
+    }
     const results = search(q, limit);
     const responseText = `Search results for query "${q}":\n` + 
                          JSON.stringify(results, null, 2) + 

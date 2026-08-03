@@ -6,9 +6,10 @@ tool itself — `server.js`'s auto-loader only scans files directly in
 `tools/*.js` and skips directories, so nothing here is auto-registered.
 
 The **authoritative parsing/authoring contract** lives in the corpus itself:
-`resources/ln-ashlar/docs-mcp/README.md` + `resources/ln-ashlar/docs-mcp/_templates/*.md`.
-This file only documents server-side config and decisions that don't belong
-in the corpus contract.
+`<root>/docs-mcp/README.md` + `<root>/docs-mcp/_templates/*.md`, where
+`<root>` is any repo root listed in `DOCS_CORPUS_ROOTS` (see below). This file
+only documents server-side config and decisions that don't belong in the
+corpus contract.
 
 ## Configuration
 
@@ -21,7 +22,50 @@ in the corpus contract.
   server degrades gracefully: one `console.warn`, empty index, every tool
   responds with a clear "not configured" text (never a throw).
 
+- `<root>/docs-mcp/component-router.md` — the routing contract served as MCP
+  `instructions`; see "Bootstrap routing contract" below. Optional per root.
+
+`configuredRoots()` from `corpus.js` is the single root resolver for the whole
+server — the legacy knowledge index (`tools/knowledge/loader.js`,
+`tools/knowledge_read.js`) and `tools/get_ln_schema.js` go through it too.
+There is no hardcoded corpus location anywhere, and no in-repo copy of the
+attributes schema to silently fall back on.
+
 ## Decisions
+
+### Bootstrap routing contract (`component-router.md`)
+
+Each root may carry `docs-mcp/component-router.md`: a component-selection
+matrix whose body is injected verbatim into every MCP session's `instructions`
+(`instructions.js`, `buildInstructions()`), and served on demand by the
+`get_component_router` tool. Rationale: `instructions` is the only push-based
+channel in MCP — it reaches the model before its first token with no tool call,
+which is what makes the routing rule a fence rather than a suggestion.
+
+- **Read raw, never indexed.** `buildIndex()` reads the file into
+  `index.routers` and stops there — no `parseDoc()`, and no entry in `docs`,
+  `byName`, `registry`, `markupIndex` or `sectionUnits`. Two reasons: the file
+  carries no frontmatter by design (it is a map, not a document), and indexing
+  it would put a `component-router` name into the same namespace as the real
+  `ln-router` component in `components/`.
+- **Filename is fixed and root-neutral** (`ROUTER_FILENAME` in `corpus.js`).
+  The server is federated across product repos, so a product-prefixed name
+  would not generalise. No aliases are accepted.
+- **A root without one is legal** — it contributes no section, and `warnOnce`
+  records it. When no configured root has one, `buildInstructions()` returns
+  `null` and the server constructs `McpServer` without `instructions` rather
+  than sending an empty rule.
+- **Built per session, not at boot.** `createMcpServer()` is async and awaits
+  `buildInstructions()` on each connection, so it rides the existing git-HEAD
+  cache invalidation: a corpus commit reaches the next session with no restart.
+- The `ROUTING_PREAMBLE` carries only the enforcement framing. The routing
+  steps are not restated there — each `component-router.md` opens with its own
+  routing rule, and duplicating it would cost tokens on every session and drift.
+- `ROUTER_FIRST_HINT` prefixes the descriptions of `get_markup`,
+  `get_component`, `list_components` and `search_docs` only. The 18
+  `generate_ln_*` tools deliberately do NOT carry it: they emit canonical
+  markup by construction, and 18× the description text is real tool-list token
+  cost for no added safety — the preamble covers them instead.
 
 ### Name-collision policy (federated corpus keying)
 

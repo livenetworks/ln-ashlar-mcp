@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { ensureIndex, notConfiguredMessage } from "./ashlar/corpus.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "list_components";
 
 export const definition = {
   title: "List Components",
   description:
+    ROUTER_FIRST_HINT +
     "List every indexed ln-ashlar docs-mcp component (components/ folder only, across all " +
     "configured corpus roots) as a markdown table with name, classification, status, domain, " +
     "summary and tags. Optionally filter by classification, domain, status and/or tags " +
