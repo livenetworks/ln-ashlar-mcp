@@ -3,12 +3,14 @@ import { loadTemplate, compileTemplate, escapeHtml } from "./snippets/template_e
 import { attr } from "./snippets/builders.js";
 import { ATTR } from "./snippets/attributes.generated.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_stepper";
 
 export const definition = {
 	title: "Generate ln-ashlar Stepper",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира чекор-по-чекор индикатор. Ги следи селекторите од scss/config/mixins/_stepper.scss: " +
 		"<ol data-ln-stepper> со <li data-ln-step='complete'|'current'> и > [data-ln-step-label]. " +
 		"Редниот број го рендерира CSS counter — не се пишува во markup-от.",

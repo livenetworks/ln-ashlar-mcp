@@ -2,12 +2,14 @@ import { z } from "zod";
 import { loadTemplate, compileTemplate, raw, escapeHtml } from "./snippets/template_engine.js";
 import { flag } from "./snippets/builders.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_popover";
 
 export const definition = {
 	title: "Generate ln-ashlar Popover",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира data-ln-popover контејнер. Се отвора од тригер со data-ln-popover-for=\"{id}\". " +
 		"Може да содржи филтри, пребарување или обична содржина.",
 	inputSchema: {

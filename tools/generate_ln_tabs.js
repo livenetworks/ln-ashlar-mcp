@@ -2,12 +2,14 @@ import { z } from "zod";
 import { loadTemplate, compileTemplate, escapeHtml, indentBlock } from "./snippets/template_engine.js";
 import { ATTR } from "./snippets/attributes.generated.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_tabs";
 
 export const definition = {
 	title: "Generate ln-ashlar Tabs",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира табови со панели. Со trigger='anchor' добиваш URL hash deep-linking (#id:key) " +
 		"со гол data-ln-tab; со trigger='button' добиваш data-ln-tab='{key}'. " +
 		"Неактивните панели носат class='hidden' — тоа е конвенцијата во ln-tabs.md.",

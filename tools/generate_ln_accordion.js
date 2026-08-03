@@ -2,12 +2,14 @@ import { z } from "zod";
 import { loadTemplate, compileTemplate, escapeHtml, indentBlock } from "./snippets/template_engine.js";
 import { ATTR } from "./snippets/attributes.generated.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_accordion";
 
 export const definition = {
 	title: "Generate ln-ashlar Accordion",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира акордеон со N панели. Секој панел е <li> со <button data-ln-toggle-for> тригер " +
 		"и <section data-ln-toggle> панел — data-ln-toggle носи 'open'/'closed' како состојба.",
 	inputSchema: {

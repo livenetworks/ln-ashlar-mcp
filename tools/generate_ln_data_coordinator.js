@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { buildCoordinator, COORDINATOR_DICT_ENTRIES } from "./snippets/builders.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_data_coordinator";
 
 export const definition = {
 	title: "Generate ln-ashlar Data Coordinator",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира Layer 2 data coordinator со <data-ln-data-store> (IndexedDB кеш) и " +
 		"<data-ln-api-connector> (API конектор), плус hidden i18n речник. " +
 		"Кога има вгнездена содржина коренот е <div> и НЕ е hidden; празен омот е <ul> со <li> деца.",

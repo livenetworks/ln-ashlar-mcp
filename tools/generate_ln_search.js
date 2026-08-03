@@ -3,12 +3,14 @@ import { loadTemplate, compileTemplate, raw } from "./snippets/template_engine.j
 import { attr } from "./snippets/builders.js";
 import { ATTR } from "./snippets/attributes.generated.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_search";
 
 export const definition = {
 	title: "Generate ln-ashlar Search Input",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира search инпут. data-ln-search го носи ID на целниот контејнер, а data-ln-search-items е " +
 		"CSS СЕЛЕКТОР за децата што се филтрираат (на пр. 'tbody tr', 'li') — не листа на полиња.",
 	inputSchema: {

@@ -3,6 +3,7 @@ import { loadTemplate, compileTemplate, raw } from "./snippets/template_engine.j
 import { attr, flag, buildDict } from "./snippets/builders.js";
 import { ATTR } from "./snippets/attributes.generated.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_upload";
 
@@ -15,6 +16,7 @@ const DEFAULT_DICT = [
 export const definition = {
 	title: "Generate ln-ashlar Upload Dropzone",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира drag-and-drop upload поле. data-ln-upload ја носи endpoint URL вредноста — " +
 		"без неа компонентата нема каде да прати. Вклучува и hidden i18n речник (data-ln-upload-dict).",
 	inputSchema: {

@@ -3,12 +3,14 @@ import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
 import { buildCoordinator, buildTable, buildModal, buildEmptyState } from "./snippets/builders.js";
 import { fieldSchema } from "./snippets/field_schema.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_crud_module";
 
 export const definition = {
 	title: "Generate ln-ashlar Full CRUD Module",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира комплетен Local-First CRUD модул во еден снипет: modal coordinator омот, data coordinator " +
 		"(store + api connector + i18n речник), data table со сортирање/филтри/empty state, и modal со форма. " +
 		"Компонира преку споделените builder-и — сите data-ln-* атрибути се проверени наспроти ln-ashlar изворот.",

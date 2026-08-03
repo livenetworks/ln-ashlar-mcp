@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { loadTemplate, compileTemplate, raw, escapeHtml } from "./snippets/template_engine.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_page";
 
 export const definition = {
 	title: "Generate ln-ashlar Page Shell",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира комплетна HTML страница (page shell) со header, footer, toast контејнер и тема. " +
 		"Темата се поставува со data-theme на <html> (така ја чита scss/config/_theme.scss); " +
 		"'auto' намерно не емитува атрибут за да важи prefers-color-scheme.",

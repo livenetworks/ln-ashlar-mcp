@@ -2,12 +2,14 @@ import { z } from "zod";
 import { buildForm } from "./snippets/builders.js";
 import { fieldSchema } from "./snippets/field_schema.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_form";
 
 export const definition = {
 	title: "Generate ln-ashlar Form",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира <form data-ln-form> со валидација. data-ln-form е булов атрибут, " +
 		"data-ln-form-scope='resource' го врзува со data coordinator, а data-ln-form-action-edit е " +
 		"ПАТЕКА-ТЕМПЛЕЈТ (на пр. '/api/users/:id') што ја заменува action при уредување.",

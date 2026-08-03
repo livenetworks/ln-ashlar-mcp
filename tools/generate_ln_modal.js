@@ -2,12 +2,14 @@ import { z } from "zod";
 import { buildModal } from "./snippets/builders.js";
 import { fieldSchema } from "./snippets/field_schema.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_modal";
 
 export const definition = {
 	title: "Generate ln-ashlar Modal",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира <dialog data-ln-modal>. Кога модалот содржи форма, <form data-ln-form> е ДИРЕКТЕН ПРВ CHILD. " +
 		"Dialog-от се обвиткува во <section data-ln-modal-coordinator> — ln-modal-coordinator бара " +
 		"triggerEl.closest('[data-ln-modal-coordinator]'), па без тој предок data-ln-modal-for тригерите не работат.",

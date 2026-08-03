@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { loadTemplate, compileTemplate, escapeHtml } from "./snippets/template_engine.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_timeline";
 
 export const definition = {
 	title: "Generate ln-ashlar Timeline",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира хронолошка листа на настани. Чист семантички HTML — ln-ashlar нема JS компонента " +
 		"за timeline; библиотеката врзува на .timeline класата.",
 	inputSchema: {

@@ -13,6 +13,12 @@ import { parseDoc } from './parser.js';
 const NON_SKILL_FOLDERS = ['components', 'css', 'patterns', 'guides', 'doctrine'];
 const SKILL_CONTEXTS = ['app', 'web', 'wordpress'];
 
+// The routing contract: a top-level file per corpus root, served verbatim as
+// the MCP session `instructions` and by get_component_router. Read raw and
+// deliberately kept OUT of the document index — see tools/ashlar/README.md
+// "Bootstrap routing contract".
+export const ROUTER_FILENAME = 'component-router.md';
+
 let cachedIndex = null;
 let cachedRootsKey = null;
 let cachedSignature = null;
@@ -153,6 +159,7 @@ export function buildIndex(rootPaths) {
   const markupIndex = new Map(); // compositeKey -> markup
   const sectionUnits = [];
   const rootMeta = [];
+  const routers = []; // one entry per root that carries a component-router.md
 
   roots.forEach((rootPath, rootIndex) => {
     const corpusRoot = path.join(rootPath, 'docs-mcp');
@@ -162,6 +169,32 @@ export function buildIndex(rootPaths) {
       warnOnce(`ashlar-docs: root not readable, skipped: ${rootPath}`);
       rootMeta.push({ index: rootIndex, path: rootPath, label: rootLabel, ok: false, signature: null });
       return;
+    }
+
+    // Routing contract — read raw, never parsed as a corpus document: it
+    // carries no frontmatter by design, and keeping it out of the index is
+    // what stops its name colliding with the real `ln-router` component.
+    // A root without one is legal; it simply contributes no routing section.
+    const routerPath = path.join(corpusRoot, ROUTER_FILENAME);
+    let routerBody = '';
+    try {
+      routerBody = fs.readFileSync(routerPath, 'utf8').trim();
+    } catch {
+      routerBody = '';
+    }
+    if (routerBody) {
+      routers.push({
+        rootIndex,
+        rootPath,
+        rootLabel,
+        relPath: ROUTER_FILENAME,
+        path: routerPath,
+        body: routerBody
+      });
+    } else {
+      warnOnce(
+        `ashlar-docs: no routing contract at "${rootLabel}/docs-mcp/${ROUTER_FILENAME}" — no routing instructions will be injected for this root`
+      );
     }
 
     const nonSkillNames = new Set(); // non-skill docs: unique by name within the root
@@ -382,6 +415,7 @@ export function buildIndex(rootPaths) {
   return {
     roots: rootMeta,
     builtAt: Date.now(),
+    routers,
     docs,
     byName,
     registry,

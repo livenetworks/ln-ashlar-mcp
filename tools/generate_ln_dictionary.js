@@ -2,6 +2,7 @@ import { z } from "zod";
 import { buildDict } from "./snippets/builders.js";
 import { ATTR } from "./snippets/attributes.generated.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_dictionary";
 
@@ -20,6 +21,7 @@ const DICT_ATTR_BY_COMPONENT = {
 export const definition = {
 	title: "Generate ln-ashlar Dictionary",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира hidden i18n речник според doctrine/html-markup-rules.md §3: <ul hidden> со " +
 		"<li data-ln-{component}-dict=\"{key}\">. Мора да се вгради ВНАТРЕ во markup-от на компонентата " +
 		"што го чита — lnCore.buildDict(root, selector) бара само во сопственото поддрво.",

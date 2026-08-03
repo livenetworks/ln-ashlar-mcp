@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { loadTemplate, compileTemplate, escapeHtml } from "./snippets/template_engine.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_dropdown";
 
 export const definition = {
 	title: "Generate ln-ashlar Dropdown",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира dropdown мени: <div data-ln-dropdown> со <button data-ln-toggle-for> тригер " +
 		"и <ul data-ln-toggle> мени, според канонскиот markup во ln-dropdown.md.",
 	inputSchema: {

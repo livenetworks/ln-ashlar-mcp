@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { loadTemplate, compileTemplate, raw, escapeHtml } from "./snippets/template_engine.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_card";
 
 export const definition = {
 	title: "Generate ln-ashlar Card",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира картичка со наслов, значка, содржина и акции. Чист семантички HTML — " +
 		"ln-ashlar нема JS компонента за card, стилизирањето е преку .ln-card класата.",
 	inputSchema: {

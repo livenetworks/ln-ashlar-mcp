@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { buildTable, buildEmptyState } from "./snippets/builders.js";
 import { htmlResult } from "./snippets/mcp.js";
+import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
 
 export const name = "generate_ln_table";
 
 export const definition = {
 	title: "Generate ln-ashlar Table",
 	description:
+		ROUTER_FIRST_HINT +
 		"Генерира ln-ashlar табела во SSR или Data-Driven режим. " +
 		"Сортирањето бара data-ln-table-sort на <th> (не само копчето), селекцијата бара " +
 		"data-ln-table-selectable на коренот, а empty state оди како <template data-ln-table-empty> внатре во коренот.",
