@@ -187,7 +187,8 @@ describe("CRUD модулот произведува жив markup", () => {
 	});
 
 	test("B2: API конекторот има endpoint како вредност", () => {
-		assert.match(html, /data-ln-api-connector="\/api\/users"/);
+		assert.match(html, /data-ln-api-connector/);
+		assert.match(html, /data-ln-api-path="\/api\/users"/);
 		assert.doesNotMatch(html, /data-ln-api-url/);
 	});
 
@@ -224,7 +225,8 @@ describe("CRUD модулот произведува жив markup", () => {
 	});
 
 	test("H1/H2: сортирањето и селекцијата се навистина вклучени", () => {
-		assert.match(html, /data-ln-table-sort="string"/);
+		// CRUD модулот е секогаш data-driven, па користи data-ln-sort, а не data-ln-table-sort
+		assert.match(html, /data-ln-sort="users"/);
 		assert.match(html, /data-ln-table-selectable/);
 	});
 
@@ -266,12 +268,12 @@ describe("CRUD модулот произведува жив markup", () => {
 describe("builders", () => {
 	test("координатор без деца е компактен ul и смее да е hidden", () => {
 		const html = buildCoordinator({ id: "c", resource: "users", apiPath: "/api/users" });
-		assert.match(html, /^<!--[\s\S]*<ul data-ln-data-coordinator="users" id="c" hidden>/m);
+		assert.match(html, /<ul data-ln-data-coordinator id="c" hidden>/);
 	});
 
 	test("координатор со деца е div и НЕ е hidden", () => {
 		const html = buildCoordinator({ id: "c", resource: "users", childrenHtml: "<p>x</p>" });
-		assert.match(html, /<div data-ln-data-coordinator="users" id="c">/);
+		assert.match(html, /<div data-ln-data-coordinator id="c">/);
 		assert.doesNotMatch(html, /data-ln-data-coordinator[^>]*hidden/);
 	});
 
@@ -291,7 +293,7 @@ describe("builders", () => {
 	});
 
 	test("корисничкиот текст во колона label не може да инјектира markup", () => {
-		const html = buildTable({ id: "t", name: "x", columns: [{ field: "a", label: '<script>alert(1)</script>' }] });
+		const html = buildTable({ id: "t", name: "x", mode: "ssr", columns: [{ field: "a", label: '<script>alert(1)</script>' }] });
 		assert.doesNotMatch(html, /<script>/);
 		assert.match(html, /&lt;script&gt;/);
 	});
@@ -317,6 +319,7 @@ describe("сите генератори враќаат валиден MCP envelo
 		"generate_ln_tabs.js": { id: "tb", tabs: [{ key: "a", title: "A", content: "<p>x</p>" }] },
 		"generate_ln_dropdown.js": { id: "d", items: [{ title: "A", href: "/a" }] },
 		"generate_ln_upload.js": { id: "u", action_url: "/api/files" },
+		"generate_ln_sort.js": { target: "users", fields: [{ field: "name", label: "Име" }] },
 		"generate_ln_stat_card.js": { id: "sc", label: "L", value: "1" },
 		"generate_ln_stepper.js": { id: "st", steps: [{ label: "Еден", status: "complete" }] },
 		"generate_ln_timeline.js": { id: "tl", items: [{ title: "T", timestamp: "сега" }] }
