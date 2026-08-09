@@ -2,6 +2,7 @@ node_modules/
 logs/
 config/auth.json
 config/jwt.json
+config/gemini.json
 resources/
 .claude
 
