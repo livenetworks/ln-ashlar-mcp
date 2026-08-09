@@ -7,6 +7,7 @@ import { randomUUID, createHash } from 'crypto';
 import { secureCompare } from '../middleware/secure-compare.js';
 import { getUsers } from '../middleware/user-store.js';
 import { getBaseUrl } from '../middleware/public-url.js';
+import { rateLimit } from '../middleware/rate-limit.js';
 
 // Resolve __dirname for ES module
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,27 +62,7 @@ const issueTokens = (username) => {
   return { access_token, token_type: 'Bearer', expires_in: 86400, refresh_token };
 };
 
-// Simple in-memory rate limiter
-const rateBuckets = new Map(); // key -> { count, resetAt }
-const rateLimit = (max, windowMs) => (req, res, next) => {
-  const now = Date.now();
-  const key = `${req.ip}|${req.path}`;
-  let bucket = rateBuckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    bucket = { count: 0, resetAt: now + windowMs };
-    rateBuckets.set(key, bucket);
-  }
-  bucket.count++;
-  if (bucket.count > max) {
-    return res.status(429).json({ error: 'too_many_requests', error_description: 'Премногу обиди. Обидете се повторно подоцна.' });
-  }
-  if (rateBuckets.size > 10000) {
-    for (const [k, v] of rateBuckets) {
-      if (v.resetAt <= now) rateBuckets.delete(k);
-    }
-  }
-  next();
-};
+// rateLimit is imported from ../middleware/rate-limit.js
 
 // Premium HTML Login Page Template - loaded once at start
 const loginHtmlTemplate = fs.readFileSync(path.resolve(__dirname, '../views', 'login.html'), 'utf-8');
@@ -154,7 +135,7 @@ router.post('/authorize', rateLimit(10, 15 * 60 * 1000), (req, res) => {
   }
 
   // Success: generate authorization code (short-lived JWT containing username)
-  const codePayload = { username, jti: randomUUID() };
+  const codePayload = { username, jti: randomUUID(), client_id, redirect_uri };
   if (code_challenge) {
     codePayload.code_challenge = code_challenge;
   }
@@ -226,6 +207,15 @@ router.post('/token', rateLimit(30, 15 * 60 * 1000), (req, res) => {
   try {
     const payload = jwt.verify(code, jwtSecret);
     const username = payload.username;
+
+    // Verify client_id matches the issued code
+    if (payload.client_id && payload.client_id !== client_id) {
+      return res.status(400).json({ error: 'invalid_grant', error_description: 'client_id не одговара на издадениот код.' });
+    }
+    // Verify redirect_uri matches the issued code
+    if (payload.redirect_uri && payload.redirect_uri !== redirect_uri) {
+      return res.status(400).json({ error: 'invalid_grant', error_description: 'redirect_uri не одговара на издадениот код.' });
+    }
 
     // Clean up expired one-time-use records
     const now = Date.now();
