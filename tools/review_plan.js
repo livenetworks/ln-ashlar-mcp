@@ -85,11 +85,15 @@ export const handler = async (args, extra) => {
 	const planType = plan_type || "generic";
 	const apiKeyId = extra?.authInfo?.clientId ?? "unknown";
 
-	if (!wrap_up && iteration > cfg.maxIterations) {
+	// `iteration` е optional во схемата, а `undefined > 3` е false — без овој
+	// default клиент што полето го изоставува го заобиколуваше лимитот целосно.
+	const currentIteration = iteration ?? 1;
+
+	if (!wrap_up && currentIteration > cfg.maxIterations) {
 		return {
 			content: [{
 				type: "text",
-				text: `Iteration ${iteration} exceeds the maximum of ${cfg.maxIterations}. Stop iterating and finalize your plan.`
+				text: `Iteration ${currentIteration} exceeds the maximum of ${cfg.maxIterations}. Stop iterating and finalize your plan.`
 			}],
 			isError: true
 		};
