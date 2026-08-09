@@ -13,7 +13,7 @@ import oauthRouter from "./routes/oauth.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { buildInstructions } from "./tools/ashlar/instructions.js";
-import { pathToFileURL } from 'url';
+import { pathToFileURL, fileURLToPath } from 'url';
 
 const app = express();
 app.use(express.json());
@@ -115,7 +115,9 @@ app.use(oauthRouter);
 app.use(authMiddleware);
 
 const registeredTools = [];
-const toolsDir = path.resolve('tools');
+// Наспроти модулот, не наспроти cwd: серверот се стартува како сервис од
+// непознат работен директориум, а неуспехот тука е тивок — нула алатки.
+const toolsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'tools');
 try {
   const files = fs.readdirSync(toolsDir);
   for (const file of files) {
