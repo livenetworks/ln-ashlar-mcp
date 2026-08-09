@@ -7,7 +7,7 @@
 // НЕ docs-mcp схемата — таа заостанува зад кодот.
 //
 // Committed намерно: генераторите мора да работат и кога ln-ashlar репозиториумот
-// не е достапен (configuredRoots() враќа [] — види test/knowledge-unconfigured.test.js).
+// не е достапен (configuredRoots() враќа [] кога не е конфигуриран).
 
 /**
  * Симболички пристап до вистинските ln-ashlar атрибути.
@@ -34,6 +34,22 @@ export const ATTR = Object.freeze({
 	autosaveClear: "data-ln-autosave-clear",
 	autosaveDebounceInput: "data-ln-autosave-debounce-input",
 	autosaveExclude: "data-ln-autosave-exclude",
+	chart: "data-ln-chart",
+	chartArea: "data-ln-chart-area",
+	chartCount: "data-ln-chart-count",
+	chartEmpty: "data-ln-chart-empty",
+	chartLabels: "data-ln-chart-labels",
+	chartLine: "data-ln-chart-line",
+	chartMax: "data-ln-chart-max",
+	chartMin: "data-ln-chart-min",
+	chartPadding: "data-ln-chart-padding",
+	chartPlot: "data-ln-chart-plot",
+	chartSort: "data-ln-chart-sort",
+	chartSource: "data-ln-chart-source",
+	chartType: "data-ln-chart-type",
+	chartX: "data-ln-chart-x",
+	chartY: "data-ln-chart-y",
+	chartZero: "data-ln-chart-zero",
 	circularProgress: "data-ln-circular-progress",
 	circularProgressLabel: "data-ln-circular-progress-label",
 	circularProgressMax: "data-ln-circular-progress-max",
@@ -58,6 +74,9 @@ export const ATTR = Object.freeze({
 	dataStoreNoAutosync: "data-ln-data-store-no-autosync",
 	dataStoreSearchFields: "data-ln-data-store-search-fields",
 	dataStoreStale: "data-ln-data-store-stale",
+	dataStoreWindow: "data-ln-data-store-window",
+	dataStoreWindowPage: "data-ln-data-store-window-page",
+	dataStoreWindowThreshold: "data-ln-data-store-window-threshold",
 	date: "data-ln-date",
 	dateDict: "data-ln-date-dict",
 	dateDictKey: "data-ln-date-dict-key",
@@ -103,8 +122,6 @@ export const ATTR = Object.freeze({
 	list: "data-ln-list",
 	listBody: "data-ln-list-body",
 	listClear: "data-ln-list-clear",
-	listClearAll: "data-ln-list-clear-all",
-	listCount: "data-ln-list-count",
 	listEmpty: "data-ln-list-empty",
 	listField: "data-ln-list-field",
 	listFiltered: "data-ln-list-filtered",
@@ -112,11 +129,7 @@ export const ATTR = Object.freeze({
 	listSelectable: "data-ln-list-selectable",
 	listSelected: "data-ln-list-selected",
 	listSource: "data-ln-list-source",
-	listStore: "data-ln-list-store",
 	listTotal: "data-ln-list-total",
-	listWindow: "data-ln-list-window",
-	listWindowPage: "data-ln-list-window-page",
-	listWindowThreshold: "data-ln-list-window-threshold",
 	mapper: "data-ln-mapper",
 	modal: "data-ln-modal",
 	modalClose: "data-ln-modal-close",
@@ -156,6 +169,7 @@ export const ATTR = Object.freeze({
 	show: "data-ln-show",
 	slugFrom: "data-ln-slug-from",
 	sort: "data-ln-sort",
+	sortField: "data-ln-sort-field",
 	sortIcon: "data-ln-sort-icon",
 	sortable: "data-ln-sortable",
 	sortableHandle: "data-ln-sortable-handle",
@@ -180,7 +194,6 @@ export const ATTR = Object.freeze({
 	tableColSort: "data-ln-table-col-sort",
 	tableColSortIcon: "data-ln-table-col-sort-icon",
 	tableCoordinator: "data-ln-table-coordinator",
-	tableCount: "data-ln-table-count",
 	tableDict: "data-ln-table-dict",
 	tableEmpty: "data-ln-table-empty",
 	tableEmptyWhen: "data-ln-table-empty-when",
@@ -195,11 +208,7 @@ export const ATTR = Object.freeze({
 	tableSelected: "data-ln-table-selected",
 	tableSort: "data-ln-table-sort",
 	tableSource: "data-ln-table-source",
-	tableStore: "data-ln-table-store",
 	tableTotal: "data-ln-table-total",
-	tableWindow: "data-ln-table-window",
-	tableWindowPage: "data-ln-table-window-page",
-	tableWindowThreshold: "data-ln-table-window-threshold",
 	tabs: "data-ln-tabs",
 	tabsActive: "data-ln-tabs-active",
 	tabsDefault: "data-ln-tabs-default",
@@ -245,8 +254,8 @@ export const ATTR = Object.freeze({
 });
 
 /**
- * Целото множество валидни ln-ashlar атрибути — го троши conformance тестот
- * во test/snippets.test.js за да ги фати ghost атрибутите во _src/**.html.
+ * Целото множество валидни ln-ashlar атрибути — го троши conformance
+ * линтерот (npm run lint:snippets) за да ги фати ghost атрибутите во _src/**.html.
  * @type {ReadonlySet<string>}
  */
 export const KNOWN_LN_ATTRS = new Set([
@@ -269,6 +278,22 @@ export const KNOWN_LN_ATTRS = new Set([
 	"data-ln-autosave-clear",
 	"data-ln-autosave-debounce-input",
 	"data-ln-autosave-exclude",
+	"data-ln-chart",
+	"data-ln-chart-area",
+	"data-ln-chart-count",
+	"data-ln-chart-empty",
+	"data-ln-chart-labels",
+	"data-ln-chart-line",
+	"data-ln-chart-max",
+	"data-ln-chart-min",
+	"data-ln-chart-padding",
+	"data-ln-chart-plot",
+	"data-ln-chart-sort",
+	"data-ln-chart-source",
+	"data-ln-chart-type",
+	"data-ln-chart-x",
+	"data-ln-chart-y",
+	"data-ln-chart-zero",
 	"data-ln-circular-progress",
 	"data-ln-circular-progress-label",
 	"data-ln-circular-progress-max",
@@ -293,6 +318,9 @@ export const KNOWN_LN_ATTRS = new Set([
 	"data-ln-data-store-no-autosync",
 	"data-ln-data-store-search-fields",
 	"data-ln-data-store-stale",
+	"data-ln-data-store-window",
+	"data-ln-data-store-window-page",
+	"data-ln-data-store-window-threshold",
 	"data-ln-date",
 	"data-ln-date-dict",
 	"data-ln-date-dict-key",
@@ -338,8 +366,6 @@ export const KNOWN_LN_ATTRS = new Set([
 	"data-ln-list",
 	"data-ln-list-body",
 	"data-ln-list-clear",
-	"data-ln-list-clear-all",
-	"data-ln-list-count",
 	"data-ln-list-empty",
 	"data-ln-list-field",
 	"data-ln-list-filtered",
@@ -347,11 +373,7 @@ export const KNOWN_LN_ATTRS = new Set([
 	"data-ln-list-selectable",
 	"data-ln-list-selected",
 	"data-ln-list-source",
-	"data-ln-list-store",
 	"data-ln-list-total",
-	"data-ln-list-window",
-	"data-ln-list-window-page",
-	"data-ln-list-window-threshold",
 	"data-ln-mapper",
 	"data-ln-modal",
 	"data-ln-modal-close",
@@ -391,6 +413,7 @@ export const KNOWN_LN_ATTRS = new Set([
 	"data-ln-show",
 	"data-ln-slug-from",
 	"data-ln-sort",
+	"data-ln-sort-field",
 	"data-ln-sort-icon",
 	"data-ln-sortable",
 	"data-ln-sortable-handle",
@@ -415,7 +438,6 @@ export const KNOWN_LN_ATTRS = new Set([
 	"data-ln-table-col-sort",
 	"data-ln-table-col-sort-icon",
 	"data-ln-table-coordinator",
-	"data-ln-table-count",
 	"data-ln-table-dict",
 	"data-ln-table-empty",
 	"data-ln-table-empty-when",
@@ -430,11 +452,7 @@ export const KNOWN_LN_ATTRS = new Set([
 	"data-ln-table-selected",
 	"data-ln-table-sort",
 	"data-ln-table-source",
-	"data-ln-table-store",
 	"data-ln-table-total",
-	"data-ln-table-window",
-	"data-ln-table-window-page",
-	"data-ln-table-window-threshold",
 	"data-ln-tabs",
 	"data-ln-tabs-active",
 	"data-ln-tabs-default",
@@ -480,4 +498,4 @@ export const KNOWN_LN_ATTRS = new Set([
 ]);
 
 /** Број на атрибути во моментот на генерирање. */
-export const ATTR_COUNT = 227;
+export const ATTR_COUNT = 236;

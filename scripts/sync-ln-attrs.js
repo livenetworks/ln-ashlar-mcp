@@ -4,9 +4,8 @@
 // Ја гради врската меѓу ln-ashlar кодот и HTML генераторите во tools/snippets.
 //
 // Генераторите НЕ смеат да го читаат ln-ashlar репозиториумот во runtime —
-// configuredRoots() враќа [] кога корпусот не е конфигуриран (види
-// test/knowledge-unconfigured.test.js), а серверот мора да работи и тогаш.
-// Затоа овој скрипт се пушта рачно, а резултатот се КОМИТИРА.
+// configuredRoots() враќа [] кога корпусот не е конфигуриран, а серверот мора
+// да работи и тогаш. Затоа овој скрипт се пушта рачно, а резултатот се КОМИТИРА.
 //
 // Употреба:
 //   npm run sync:ln-attrs                        (чита DOCS_CORPUS_ROOTS / ASHLAR_DOCS_REPO)
@@ -165,7 +164,7 @@ function renderModule(attrs) {
 // НЕ docs-mcp схемата — таа заостанува зад кодот.
 //
 // Committed намерно: генераторите мора да работат и кога ln-ashlar репозиториумот
-// не е достапен (configuredRoots() враќа [] — види test/knowledge-unconfigured.test.js).
+// не е достапен (configuredRoots() враќа [] кога не е конфигуриран).
 
 /**
  * Симболички пристап до вистинските ln-ashlar атрибути.
@@ -177,8 +176,8 @@ ${entries}
 });
 
 /**
- * Целото множество валидни ln-ashlar атрибути — го троши conformance тестот
- * во test/snippets.test.js за да ги фати ghost атрибутите во _src/**.html.
+ * Целото множество валидни ln-ashlar атрибути — го троши conformance
+ * линтерот (npm run lint:snippets) за да ги фати ghost атрибутите во _src/**.html.
  * @type {ReadonlySet<string>}
  */
 export const KNOWN_LN_ATTRS = new Set([
@@ -216,8 +215,14 @@ function main() {
 		process.exit(1);
 	}
 
-	const module = renderModule(attrs);
-	const previous = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, "utf-8") : null;
+	let module;
+	try {
+		module = renderModule(attrs);
+	} catch (e) {
+		console.error(`\nsync-ln-attrs: ${e.message}`);
+		process.exit(1);
+	}
+	const previous = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, "utf-8").replace(/\r\n/g, "\n") : null;
 	const changed = previous !== module;
 
 	// Drift извештај: схема наспроти код.
