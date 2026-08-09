@@ -26,7 +26,14 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const OUT_FILE = path.join(REPO_ROOT, "tools", "snippets", "attributes.generated.js");
 const SCHEMA_REL = "docs-mcp/schemas/ln-ashlar-attributes-schema.json";
 
-/** Каде во ln-ashlar репозиториумот се бараат атрибути (Слој 1). */
+/** 
+ * Каде во ln-ashlar репозиториумот се бараат атрибути (Слој 1). 
+ * 
+ * ВНИМАНИЕ: Скенирањето на `.scss` во `js` директориумот НЕ е баг. 
+ * ln-ashlar ја чува стилизацијата на компонентата во истата папка со кодот 
+ * (на пр. `js/ln-modal/ln-modal.scss`). Без ова скенирање, ќе се изгубат 
+ * атрибути како `data-ln-modal-when`, `data-ln-sort-icon` и `data-ln-tabs-for`.
+ */
 const SOURCE_DIRS = [
 	{ dir: "js", exts: [".js", ".scss"] },
 	{ dir: "scss", exts: [".scss"] }
