@@ -4,6 +4,7 @@ import winston from 'winston';
 import 'winston-daily-rotate-file';
 import { search, rebuildIndex, docCount } from './search.js';
 import { notConfiguredMessage } from '../ashlar/corpus.js';
+import { rateLimit } from '../../middleware/rate-limit.js';
 
 const router = express.Router();
 
@@ -40,7 +41,7 @@ router.get('/search', (req, res) => {
 });
 
 // POST /knowledge/reload - re-read markdown docs from disk and rebuild the search index
-router.post('/reload', (req, res) => {
+router.post('/reload', rateLimit(5, 60 * 1000), (req, res) => {
   try {
     const count = rebuildIndex();
     logger.info({ event: 'knowledge_reload', docs: count, user: req.user ? req.user.username : 'unknown' });
