@@ -27,6 +27,11 @@ import { z } from "zod";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TOOLS_DIR = path.join(REPO_ROOT, "tools");
 
+const KNOWN_ICONS = new Set([
+	"arrow-down", "arrow-up", "arrows-sort", "chevron-down", "cloud-upload",
+	"edit", "filter", "inbox", "minus", "plus", "search", "x"
+]);
+
 const COLUMNS = [{ field: "name", label: "Име", sortable: true, filterable: true }];
 const FIELDS = [
 	{ name: "name", label: "Име", type: "text", required: true },
@@ -54,7 +59,7 @@ const FIXTURES = {
 	generate_ln_popover: { id: "pop", content_html: "<p>x</p>" },
 	generate_ln_search: { id: "search", target_id: "users" },
 	generate_ln_sort: { target: "users", fields: [{ field: "name", label: "Име" }] },
-	generate_ln_stat_card: { id: "stat", label: "Вкупно", value: "42" },
+	generate_ln_stat_card: { id: "stat", label: "Вкупно", value: "42", trend: "+12.5%", trend_direction: "up" },
 	generate_ln_stepper: { id: "step", steps: [{ label: "Чекор" }] },
 	generate_ln_table: {
 		id: "tbl", name: "users", source: "users", columns: COLUMNS,
@@ -111,6 +116,20 @@ async function main() {
 				failures.push(`${g}: празен одговор`);
 				continue;
 			}
+
+			let text = result.content[0].text;
+			if (g === "generate_ln_stat_card") {
+				const extraDown = await mod.handler({ ...parsed.data, trend_direction: "down" });
+				const extraNeutral = await mod.handler({ ...parsed.data, trend_direction: "neutral" });
+				text += "\n" + (extraDown?.content?.[0]?.text || "") + "\n" + (extraNeutral?.content?.[0]?.text || "");
+			}
+
+			for (const m of text.matchAll(/#lnc?-([a-z0-9-]+)/g)) {
+				if (!KNOWN_ICONS.has(m[1])) {
+					failures.push(`${g}: непозната икона "#ln-${m[1]}" — ако е нова, додај ја во KNOWN_ICONS по проверка на tabler.io/icons`);
+				}
+			}
+
 			rendered++;
 		} catch (e) {
 			failures.push(`${g}: ${e.message.slice(0, 200)}`);
