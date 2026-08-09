@@ -218,29 +218,16 @@ prompt-от и одговорот, што може да се исклучи со
   промената влегува дури откако е commit-ирана (и на серверот — откако тој
   ќе pull-ира).
 
-## Тестови
+## Проверка на снипет-генераторите
 
-Тестовите користат вграден `node:test` (без дополнителни npm зависности):
+Нема тест-suite. Единствената автоматска проверка е дрифтот наспроти
+ln-ashlar изворот — `attributes.generated.js` мора да е свеж:
 
 ```bash
-npm test
+npm run sync:ln-attrs -- --root=/пат/до/ln-ashlar          # регенерирај
+npm run sync:ln-attrs -- --check --root=/пат/до/ln-ashlar  # само провери
 ```
 
-- `test/unit.test.js` — `secureCompare`, `escapeHtml`, `isAllowedRedirect`.
-- `test/ashlar-router.test.js` — routing contract-от: вчитување по корен,
-  корен без контракт, гаранцијата дека НЕ се индексира како документ,
-  `buildInstructions()` payload-от и `get_component_router` (сите корени,
-  `root` филтер, непознат корен, неконфигуриран).
-- `test/knowledge-roots.test.js` — резолуција на корпус-корените во legacy
-  knowledge слојот: индексирање со root-префикс низ два фикстур-корена,
-  обете форми на патека во `knowledge_read`, заштита од path traversal.
-- `test/knowledge-unconfigured.test.js` — со празна `DOCS_CORPUS_ROOTS`:
-  import ланецот не фрла, а алатките пријавуваат „not configured".
-- `test/integration.test.js` — стартува реален `node server.js` процес на
-  `PORT=8099` (со фикстур-корен во `DOCS_CORPUS_ROOTS`), го тестира целосниот
-  OAuth + PKCE flow, `/mcp` автентикација, `/knowledge/search`,
-  `/knowledge/reload` и врзувањето на MCP сесиите за корисник. Процесот се
-  убива автоматски по завршувањето на тестовите (вклучително и при неуспех).
-
-Интеграцискиот тест ги чита реалните креденцијали од `config/auth.json` во
-времето на извршување — не ги хардкодирај во тестовите.
+`--check` враќа exit 1 кога ln-ashlar се поместил под генераторите. Пушти го
+по секој pull на ln-ashlar — снипет што реферира избришан `data-ln-*` атрибут
+изгледа точно и не работи.

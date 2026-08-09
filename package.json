@@ -7,6 +7,8 @@
     "start": "node server.js",
     "test": "node --test test/*.test.js",
     "lint:docs": "node tools/ashlar/lint-cli.js",
+    "lint:snippets": "node scripts/lint-snippets.js",
+    "smoke:generators": "node scripts/smoke-generators.js",
     "sync:ln-attrs": "node scripts/sync-ln-attrs.js"
   },
   "keywords": [],
