@@ -1,7 +1,9 @@
 <!-- Popover филтер за {{label}} -->
+<!-- data-ln-filter го резолвира таргетот со getElementById: во data-driven режим -->
+<!-- тоа е id-то на store-от (изворот го поседува query-то), не id-то на табелата. -->
 <div data-ln-popover id="{{id}}" class="ln-popover">
 	<input type="search" data-ln-search="{{list_id}}" data-ln-search-items="li" class="ln-filter-search" placeholder="Пребарај...">
-	<ul id="{{list_id}}" data-ln-filter="{{table_id}}" class="ln-filter-list">
+	<ul id="{{list_id}}" data-ln-filter="{{target_id}}" class="ln-filter-list">
 		<li>
 			<label class="ln-filter-option">
 				<input type="checkbox" data-ln-filter-key="{{filter_key}}" data-ln-filter-reset checked> Сите

@@ -1,12 +1,16 @@
 <!-- ln-ashlar Data Coordinator (Layer 2) — обвиткува вгнездени компоненти -->
 <!-- Коренот е <div>, не <ul>: табела/модал/dialog не смеат да бидат деца на листа. -->
 <!-- Нема `hidden` — тоа би ја сокрило целата вгнездена содржина. -->
-<div data-ln-data-coordinator="{{resource}}" id="{{id}}">
-	<!-- Локален IndexedDB кеш -->
-	<div data-ln-data-store="{{resource}}"{{store_indexes_attr}} hidden></div>
+<!-- Идентитетот е `id`, НЕ вредноста на маркерот: ln-data-coordinator и -->
+<!-- ln-data-store читаат `dom.id`, а маркер-атрибутот стои без вредност. -->
+<div data-ln-data-coordinator id="{{id}}">
+	<!-- Локален IndexedDB кеш. Ова `id` е името што го бараат data-ln-*-source, -->
+	<!-- data-ln-search, data-ln-filter и data-ln-sort. -->
+	<div id="{{store_id}}" data-ln-data-store{{store_attrs}} hidden></div>
 
-	<!-- Мрежен API конектор -->
-	<div data-ln-api-connector="{{api_path}}"{{api_base_url_attr}} hidden></div>
+	<!-- Мрежен API конектор. Патеката е data-ln-api-path — самиот -->
+	<!-- data-ln-api-connector е маркер и вредноста на него е инертна. -->
+	<div data-ln-api-connector{{api_attrs}} hidden></div>
 
 	<!-- DICT_SLOT -->
 

@@ -19,7 +19,7 @@ export const definition = {
 			.string()
 			.default("Нема внесени записи што одговараат на барањето.")
 			.describe("Опис"),
-		icon_id: z.string().default("ln-icon-inbox").describe("ID на иконата во спрајтот"),
+		icon_id: z.string().default("ln-inbox").describe("ID на иконата во спрајтот"),
 		action_label: z.string().optional().describe("Опционален текст за копче за акција"),
 		action_modal_id: z.string().optional().describe("ID на модал што се отвора со копчето")
 	}

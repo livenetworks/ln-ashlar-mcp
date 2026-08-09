@@ -1,10 +1,14 @@
 <!-- ln-ashlar Data Coordinator (Layer 2) — компактен омот без вгнездена содржина -->
-<ul data-ln-data-coordinator="{{resource}}" id="{{id}}" hidden>
-	<!-- Локален IndexedDB кеш -->
-	<li data-ln-data-store="{{resource}}"{{store_indexes_attr}}></li>
+<!-- Идентитетот е `id`, НЕ вредноста на маркерот: ln-data-coordinator и -->
+<!-- ln-data-store читаат `dom.id`, а маркер-атрибутот стои без вредност. -->
+<ul data-ln-data-coordinator id="{{id}}" hidden>
+	<!-- Локален IndexedDB кеш. Ова `id` е името што го бараат data-ln-*-source, -->
+	<!-- data-ln-search, data-ln-filter и data-ln-sort. -->
+	<li id="{{store_id}}" data-ln-data-store{{store_attrs}}></li>
 
-	<!-- Мрежен API конектор -->
-	<li data-ln-api-connector="{{api_path}}"{{api_base_url_attr}}></li>
+	<!-- Мрежен API конектор. Патеката е data-ln-api-path — самиот -->
+	<!-- data-ln-api-connector е маркер и вредноста на него е инертна. -->
+	<li data-ln-api-connector{{api_attrs}}></li>
 
 	<!-- DICT_SLOT -->
 </ul>

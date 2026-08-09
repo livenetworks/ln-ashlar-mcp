@@ -2,6 +2,7 @@ import { z } from "zod";
 import { loadTemplate, compileTemplate } from "./snippets/template_engine.js";
 import { buildCoordinator, buildTable, buildModal, buildEmptyState } from "./snippets/builders.js";
 import { fieldSchema } from "./snippets/field_schema.js";
+import { columnSchema } from "./snippets/column_schema.js";
 import { htmlResult } from "./snippets/mcp.js";
 import { ROUTER_FIRST_HINT } from "./ashlar/router-contract.js";
 
@@ -13,24 +14,15 @@ export const definition = {
 		ROUTER_FIRST_HINT +
 		"Генерира комплетен Local-First CRUD модул во еден снипет: modal coordinator омот, data coordinator " +
 		"(store + api connector + i18n речник), data table со сортирање/филтри/empty state, и modal со форма. " +
-		"Компонира преку споделените builder-и — сите data-ln-* атрибути се проверени наспроти ln-ashlar изворот.",
+		"Компонира преку споделените builder-и — сите data-ln-* атрибути се проверени наспроти ln-ashlar изворот. " +
+		"store-от го носи id-то `resource`, па табелата, филтрите и сортирањето сите се врзуваат на него.",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за модулот (на пр. 'users-module')"),
-		resource: z.string().describe("Име на ресурсот/ентитетот (на пр. 'users', 'products')"),
+		resource: z.string().describe("Име на ресурсот/ентитетот (на пр. 'users', 'products'). Ова е и id-то на store-от."),
 		resource_title: z.string().describe("Наслов за модулот (на пр. 'Корисници')"),
 		resource_singular: z.string().describe("Еднина за копчето за креирање (на пр. 'Корисник')"),
 		api_url: z.string().default("/api").describe("Базна API патека; ресурсот се додава ако веќе не е таму"),
-		columns: z
-			.array(
-				z.object({
-					field: z.string(),
-					label: z.string(),
-					sortable: z.boolean().optional(),
-					sort_type: z.enum(["string", "number", "date"]).optional(),
-					filterable: z.boolean().optional()
-				})
-			)
-			.describe("Листа на колони за табелата"),
+		columns: z.array(columnSchema).describe("Листа на колони за табелата"),
 		store_indexes: z
 			.array(z.string())
 			.optional()
@@ -106,11 +98,20 @@ export const handler = async ({
 		}
 	});
 
+	// storeId === resource === data-ln-table-source на табелата. Таа еднаквост е
+	// целата врска: без неа ln-data-coordinator нема што да рефрешира, а
+	// филтрите и сортирањето испраќаат кон id што не постои.
 	const coordinatorHtml = buildCoordinator({
 		id: `${id}-coordinator`,
 		resource,
+		storeId: resource,
 		apiPath: endpoint,
 		storeIndexes: indexes,
+		// `sort_type` НЕ е употреблив сигнал тука: тој е документиран како
+		// САМО-SSR (види column_schema.js), а CRUD модулот е секогаш
+		// data-driven — значи никогаш не е поставен и стариот филтер
+		// `!c.sort_type || c.sort_type === "string"` пропушташе апсолутно сè.
+		searchFields: columns.filter((c) => c.searchable !== false).map((c) => c.field),
 		childrenHtml: `<!-- Табела -->\n${tableHtml}\n\n<!-- Модал со форма -->\n${modalHtml}`
 	});
 

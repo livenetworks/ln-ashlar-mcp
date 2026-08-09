@@ -14,8 +14,7 @@ const DICT_ATTR_BY_COMPONENT = {
 	"data-coordinator": ATTR.dataCoordinatorDict,
 	table: ATTR.tableDict,
 	upload: ATTR.uploadDict,
-	date: ATTR.dateDict,
-	editor: ATTR.editorDict
+	date: ATTR.dateDict
 };
 
 export const definition = {

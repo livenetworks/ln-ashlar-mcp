@@ -47,14 +47,14 @@ npm run sync:ln-attrs -- --check             # не пишува; exit 1 ако 
 иако `ln-table` ги чита). Скриптот печати и drift извештај во двете насоки.
 
 Резултатот е **committed**: серверот мора да работи и кога ln-ashlar репозиториумот
-не е достапен (`configuredRoots()` враќа `[]` — види `test/knowledge-unconfigured.test.js`).
+не е достапен (`configuredRoots()` враќа `[]` кога не е конфигуриран).
 
-`test/snippets.test.js` паѓа ако некој генератор емитува атрибут што го нема во
+`npm run lint:snippets` (`scripts/lint-snippets.js`) паѓа ако некој генератор емитува атрибут што го нема во
 `KNOWN_LN_ATTRS`. Тоа е механизмот што спречува повторен дрифт.
 
-> Што guard-от **не** фаќа: валиден-но-погрешен атрибут. Ако колоната добие
-> `data-ln-table-col` но не и `data-ln-table-sort`, сите атрибути се вистински, а
-> сортирањето е мртво. Тоа го покриваат golden-output тестовите во истиот фајл.
+> Што guard-от **не** фаќа: валиден-но-погрешен атрибут. Ако колоната на табелата добие
+> `data-ln-table-col` но ги испушти соодветните сорт атрибути (на пр. `data-ln-sort` на `<thead>` + `data-ln-sort-field` на `<th>` за data-driven, или `data-ln-table-sort` за SSR), сите атрибути се вистински, а
+> сортирањето е мртво. Тоа се проверува со рачно стартување и преглед на кодот.
 
 ---
 
@@ -113,6 +113,6 @@ HTML со CSS класи.
 ## Локално тестирање
 
 ```bash
-npm test
+npm run lint:snippets
 node -e "import('./tools/generate_ln_crud_module.js').then(m=>m.handler({id:'u',resource:'users',resource_title:'Корисници',resource_singular:'Корисник',columns:[{field:'name',label:'Име',sortable:true}],form_fields:[{name:'name',label:'Име',required:true}]}).then(r=>console.log(r.content[0].text)))"
 ```

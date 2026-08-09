@@ -8,9 +8,9 @@ import { ROUTER_FIRST_HINT } from "./ashlar/router-contract.js";
 export const name = "generate_ln_stat_card";
 
 const TREND_ICON = {
-	up: "#ln-icon-arrow-up",
-	down: "#ln-icon-arrow-down",
-	neutral: "#ln-icon-minus"
+	up: "#ln-arrow-up",
+	down: "#ln-arrow-down",
+	neutral: "#ln-minus"
 };
 
 export const definition = {

@@ -18,6 +18,13 @@ import { fileURLToPath } from "url";
 // може да се стартуваат од било кој директориум.
 const SRC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "_src");
 
+// Строг режим — го палат само скриптите за проверка (scripts/smoke-generators.js),
+// НИКОГАШ серверот. `data` клуч што темплејтот не го содржи е СЕКОГАШ баг во
+// повикувачот: пресметаната вредност никаде не слетува, а излезот изгледа
+// нормално. Обратниот случај — неисполнет {{key}} во темплејтот — е ЛЕГАЛЕН
+// и намерно не се пријавува.
+const STRICT_TEMPLATE = process.env.LN_STRICT_TEMPLATE === "1";
+
 const RAW = Symbol("ln.raw");
 
 /**
@@ -74,7 +81,11 @@ export function loadTemplate(relativePath) {
 	if (!fs.existsSync(filePath)) {
 		throw new Error(`Темплејт фајлот не постои: ${filePath}`);
 	}
-	return fs.readFileSync(filePath, "utf-8");
+	// CRLF → LF веднаш на влез. Со git autocrlf на Windows темплејтите доаѓаат
+	// со \r\n, а сите regex-и подолу се врзани за `\n` — на пр. бришењето на
+	// празен слот (`^[ \t]*<!-- X_SLOT -->[ \t]*\n`) не матчираше преку \r и
+	// оставаше ред со гол таб во генерираниот снипет.
+	return fs.readFileSync(filePath, "utf-8").replace(/\r\n/g, "\n");
 }
 
 /**
@@ -189,6 +200,18 @@ export function compileTemplate(templateStr, data = {}, slots = {}) {
 	//    може да носи Blade/Vue изрази.
 	for (const [key, value] of Object.entries(data)) {
 		const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+		// Посебен НЕ-глобален regex за тестот. Со `/g` regex, `.test()` го
+		// памети `lastIndex` меѓу повици и вториот тест на ист објект враќа
+		// false — тивка лажна тревога.
+		if (STRICT_TEMPLATE && !new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`).test(templateStr)) {
+			throw new Error(
+				`compileTemplate: подаден data клуч "${key}" што темплејтот не го содржи. ` +
+					`Или темплејтот го испуштил {{${key}}}, или повикувачот подава мртов клуч. ` +
+					`Вредноста никаде не слетува, а излезот изгледа нормално.`
+			);
+		}
+
 		const varPattern = new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, "g");
 		const resolved = resolveValue(value);
 		result = result.replace(varPattern, () => resolved);

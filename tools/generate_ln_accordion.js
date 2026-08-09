@@ -35,7 +35,7 @@ export const handler = async ({ id, panels = [] }) => {
 		return `\t<li>
 		<button type="button" class="ln-accordion-header" ${ATTR.toggleFor}="${escapeHtml(panelId)}" aria-expanded="${panel.open ? "true" : "false"}">
 			${escapeHtml(panel.title)}
-			<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-chevron-down"></use></svg>
+			<svg class="ln-icon" aria-hidden="true"><use href="#ln-chevron-down"></use></svg>
 		</button>
 		<section id="${escapeHtml(panelId)}" ${ATTR.toggle}="${state}" class="ln-collapsible">
 			<article class="ln-collapsible-body">
