@@ -24,7 +24,7 @@ import { ROUTER_FILENAME } from './router-contract.js';
 let cachedIndex = null;
 let cachedRootsKey = null;
 let cachedSignature = null;
-let lastWarnedState = null;
+const warnedMessages = new Set();
 
 /**
  * Resolve the configured corpus roots (REPO ROOT paths, not the `docs-mcp`
@@ -66,8 +66,8 @@ export function notConfiguredMessage(roots) {
  * @param {string} message
  */
 function warnOnce(message) {
-  if (lastWarnedState === message) return;
-  lastWarnedState = message;
+  if (warnedMessages.has(message)) return;
+  warnedMessages.add(message);
   console.warn(message);
 }
 
