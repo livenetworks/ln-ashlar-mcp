@@ -51,7 +51,14 @@ function checkTableColumns(sections, title, expectedColumns, problems, strictMis
   const table = parseTable(section.text.split('\n'));
   if (!table.columns.length) {
     if (strictMissing) {
-      problems.push(`Section "${title}" is missing its expected table`);
+      const nonWhitespaceLines = section.text
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0 && !l.startsWith('#') && !l.startsWith('|'));
+      if (nonWhitespaceLines.length > 0) {
+        return; // Valid none-declaration prose (Rule 1)
+      }
+      problems.push(`"${title}" present but empty — add the normative table or an explicit none-declaration sentence.`);
     }
     return;
   }
@@ -240,13 +247,19 @@ function validateRoot(rootPath, rootIndex) {
 
     const topLevelSections = parsed.sections.filter((s) => s.level === 2);
 
-    if (f.folder === 'components') {
+    if (f.folder === 'components' && fm.classification !== 'service') {
       const numbers = topLevelSections.map((s) => s.number);
-      const expectedNumbers = [1, 2, 3, 4, 5, 6, 7];
-      const isExact = numbers.length === 7 && numbers.every((n, i) => n === expectedNumbers[i]);
-      if (!isExact) {
+      const is7 = numbers.length === 7 && numbers.every((n, i) => n === i + 1);
+      const sec4 = topLevelSections.find((s) => s.number === 4);
+      const is8WithState =
+        numbers.length === 8 &&
+        numbers.every((n, i) => n === i + 1) &&
+        sec4 &&
+        sec4.rawTitle === '4. State & Persistence';
+
+      if (!is7 && !is8WithState) {
         problems.push(
-          `Expected exactly 7 top-level "## N." sections numbered 1..7 in ascending order, found: [${numbers.join(', ')}]`
+          `Expected exactly 7 top-level "## N." sections numbered 1..7 (or 8 with "4. State & Persistence"), found: [${numbers.join(', ')}]`
         );
       }
 
@@ -258,6 +271,14 @@ function validateRoot(rootPath, rootIndex) {
       const sec3 = topLevelSections.find((s) => s.number === 3);
       if (sec3 && sec3.rawTitle !== '3. Declarative API Contract (Attributes & Events)') {
         problems.push(`Section 3 heading must be exactly "3. Declarative API Contract (Attributes & Events)", found "${sec3.rawTitle}"`);
+      }
+
+      if (fm.classification === 'simple' || fm.classification === 'coordinator') {
+        const hasAttrTable = parsed.sections.some((s) => s.title === 'Attributes Table');
+        const hasEventsApi = parsed.sections.some((s) => s.title === 'Events API');
+        if (!hasAttrTable || !hasEventsApi) {
+          problems.push("Section 3 must contain both '### Attributes Table' and '### Events API' (simple/coordinator).");
+        }
       }
 
       checkTableColumns(parsed.sections, 'Attributes Table', ATTRIBUTE_COLUMNS, problems, true);

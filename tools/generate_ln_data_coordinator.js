@@ -34,12 +34,6 @@ export const definition = {
 			.array(z.string())
 			.optional()
 			.describe("Полиња низ кои пребарува data-ln-search (data-ln-data-store-search-fields)"),
-		window: z
-			.number()
-			.optional()
-			.describe("Резидентни редови за виртуелизација (data-ln-data-store-window). Конфигурацијата е на store-от, не на приказот."),
-		window_page: z.number().optional().describe("Големина на страница при довлекување (data-ln-data-store-window-page)"),
-		window_threshold: z.number().optional().describe("Prefetch маргина во редови (data-ln-data-store-window-threshold)"),
 		children_html: z
 			.string()
 			.optional()
@@ -59,9 +53,6 @@ export const handler = async ({
 	api_base_url,
 	store_indexes = [],
 	search_fields = [],
-	window: windowSize,
-	window_page,
-	window_threshold,
 	children_html = "",
 	dict_entries
 }) =>
@@ -74,9 +65,6 @@ export const handler = async ({
 			apiBaseUrl: api_base_url,
 			storeIndexes: store_indexes,
 			searchFields: search_fields,
-			window: windowSize,
-			windowPage: window_page,
-			windowThreshold: window_threshold,
 			childrenHtml: children_html,
 			dictEntries: dict_entries ?? COORDINATOR_DICT_ENTRIES
 		})

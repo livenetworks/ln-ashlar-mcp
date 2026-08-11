@@ -236,8 +236,8 @@ export const COORDINATOR_DICT_ENTRIES = [
  * докс-баг — не постои во `js/**`. (Литералот е скратен намерно: conformance
  * проверката бара data-ln-* низ овој фајл и не разликува код од коментар.)
  *
- * ПРОЗОРЕЦ: виртуелизацијата се конфигурира на store-от
- * (data-ln-data-store-window*); `…table-window*` е избришан од ln-table.
+ * ПРОЗОРЕЦ: виртуелизацијата се конфигурира на табелата
+ * (data-ln-table-window).
  *
  * @param {object} cfg
  * @param {string} cfg.id id на координаторот
@@ -247,7 +247,6 @@ export const COORDINATOR_DICT_ENTRIES = [
  * @param {string} [cfg.apiBaseUrl]
  * @param {string[]} [cfg.storeIndexes]
  * @param {string[]} [cfg.searchFields] полиња за data-ln-data-store-search-fields
- * @param {number} [cfg.window] резидентни редови (data-ln-data-store-window)
  * @param {number} [cfg.windowPage] големина на страница
  * @param {number} [cfg.windowThreshold] prefetch маргина
  * @param {string} [cfg.childrenHtml]
@@ -278,10 +277,7 @@ export function buildCoordinator({
 
 	const storeAttrs =
 		attr(ATTR.dataStoreIndexes, storeIndexes.join(",") || null) +
-		attr(ATTR.dataStoreSearchFields, searchFields.join(",") || null) +
-		attr(ATTR.dataStoreWindow, windowSize) +
-		attr(ATTR.dataStoreWindowPage, windowPage) +
-		attr(ATTR.dataStoreWindowThreshold, windowThreshold);
+		attr(ATTR.dataStoreSearchFields, searchFields.join(",") || null);
 
 	return compileTemplate(
 		loadTemplate(hasChildren ? "containers/data-coordinator-nested.html" : "containers/data-coordinator.html"),
@@ -312,13 +308,13 @@ export function buildCoordinator({
  */
 
 /**
- * Тројката икони што ја чита `scss/` преку data-ln-table-col-sort-icon.
+ * Тројката икони за сортирање.
  * @param {string} label
  * @returns {string}
  */
 function sortButton(label) {
 	const icon = (state, symbol) =>
-		`\t<svg class="ln-icon" aria-hidden="true" ${ATTR.tableColSortIcon}="${state}"><use href="#ln-${symbol}"></use></svg>`;
+		`\t<svg class="ln-icon ln-icon-sort-${state}" aria-hidden="true"><use href="#ln-${symbol}"></use></svg>`;
 	return (
 		`<button type="button" class="table-sort" ${ATTR.tableColSort} aria-label="Сортирај по ${escapeHtml(label)}">\n` +
 		icon("none", "arrows-sort") +
@@ -463,8 +459,7 @@ export function buildTable({
 		? `<template ${ATTR.tableEmpty}>\n${indentBlock(emptyStateHtml, 1)}\n</template>`
 		: "";
 
-	// Нема `…table-window*` — виртуелизацијата се конфигурира на store-от
-	// (data-ln-data-store-window*), види buildCoordinator.
+	// Виртуелизацијата се конфигурира на табелата преку data-ln-table-window.
 	const rootAttrs = attr(ATTR.table, name) + attr(ATTR.tableSource, source) + flag(ATTR.tableSelectable, selectable);
 
 	const html = compileTemplate(
@@ -534,16 +529,22 @@ export function buildFilterPopover({ popoverId, targetId, column }) {
  * @returns {string}
  */
 export function buildSortControl({ target, fields = [], id }) {
-	const buttons = fields
-		.map(
-			(f) =>
-				`\t<button type="button"${attr(ATTR.sortField, f.field)}>${escapeHtml(f.label)}</button>`
-		)
-		.join("\n");
+	const items = fields
+		.map((f) => {
+			const fieldAttr = f.field ? ` ${attr(ATTR.sortField, f.field)}` : "";
+			return (
+				`<ul${attr("id", id)}${attr(ATTR.sort, target)}${fieldAttr} ${attr(ATTR.sortState, "none")}>\n` +
+				`  <li><button type="button" ${attr(ATTR.sortDir, "asc")} aria-label="Sort ${escapeHtml(f.label)} ascending"><svg class="ln-icon" aria-hidden="true"><use href="#ln-arrows-sort"></use></svg></button></li>\n` +
+				`  <li><button type="button" ${attr(ATTR.sortDir, "desc")} aria-label="Sort ${escapeHtml(f.label)} descending"><svg class="ln-icon" aria-hidden="true"><use href="#ln-arrow-up"></use></svg></button></li>\n` +
+				`  <li><button type="button" ${attr(ATTR.sortDir, "none")} aria-label="Remove sort for ${escapeHtml(f.label)}"><svg class="ln-icon" aria-hidden="true"><use href="#ln-arrow-down"></use></svg></button></li>\n` +
+				`</ul>`
+			);
+		})
+		.join("\n\n");
 
 	return (
 		`<!-- ln-sort: таргетот е id-то на store-от, не на приказот -->\n` +
-		`<nav${attr("id", id)}${attr(ATTR.sort, target)} class="ln-sort">\n${buttons}\n</nav>`
+		items
 	);
 }
 

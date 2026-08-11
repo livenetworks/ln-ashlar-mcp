@@ -15,8 +15,8 @@ export const definition = {
 		"Без извор на податоци подај 'ssr'. " +
 		"Во data-driven (со `source`) сортирањето го поседува store-от: <thead> добива data-ln-sort, " +
 		"а <th> data-ln-sort-field — data-ln-table-col-sort сам по себе НЕ сортира. " +
-		"data-ln-table-sort е само за SSR. Виртуелизацијата се конфигурира на store-от " +
-		"(data-ln-data-store-window), не на табелата. Empty state оди како " +
+		"data-ln-table-sort е само за SSR. Виртуелизацијата се конфигурира на табелата " +
+		"(data-ln-table-window), не на store-от. Empty state оди како " +
 		"<template data-ln-table-empty> внатре во коренот.",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за контејнерот на табелата"),

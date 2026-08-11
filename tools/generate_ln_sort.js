@@ -11,7 +11,7 @@ export const definition = {
 		ROUTER_FIRST_HINT +
 		"Генерира самостојна ln-sort контрола (сајдбар, toolbar, sheet). " +
 		"Таргетот е id-то на ln-data-store, НЕ на приказот — изворот го поседува query-то. " +
-		"Кликот циклира null → asc → desc → null и праќа ln-sort:changed; класите " +
+		"Кликот циклира null → asc → desc → null и праќа ln-sort:change; класите " +
 		"ln-sort-asc/ln-sort-desc се исцртуваат од ехото ln-data-store:query-changed, " +
 		"па две контроли врз ист store не можат да се разидат. " +
 		"За сортирање во заглавје на табела користи generate_ln_table со `source` — таму " +
