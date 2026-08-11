@@ -1,6 +1,7 @@
 # MCP Server
 
-[![M8ven Verified](https://m8ven.ai/badge/mcp/livenetworks-ln-ashlar-mcp-1u4m71)](https://m8ven.ai/mcp/livenetworks-ln-ashlar-mcp-1u4m71 ) <!-- m8ven-verify: b920ef8a7aa6c19c0152cd3c3c872cbc -->
+[![M8ven Verified](https://m8ven.ai/badge/mcp/livenetworks-ln-ashlar-mcp-1u4m71)](https://m8ven.ai/mcp/livenetworks-ln-ashlar-mcp-1u4m71)
+<!-- m8ven-verify: b920ef8a7aa6c19c0152cd3c3c872cbc -->
 
 Node.js (ESM) HTTP server exposing Model Context Protocol (MCP) tools (Streamable HTTP + legacy SSE transport) along with a custom OAuth 2.0 + PKCE authorization flow and a searchable knowledge base ([ln-ashlar](https://github.com/livenetworks/ln-ashlar) documentation).
 
