@@ -4,5 +4,5 @@
 		"https://claude.com/api/mcp/auth_callback"
 	],
 	"allowLoopbackRedirects": true,
-	"publicBaseUrl": "https://mcp.livenetworks.mk"
+	"publicBaseUrl": "https://mcp-dev.live.net.mk"
 }
