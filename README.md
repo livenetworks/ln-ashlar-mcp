@@ -1,237 +1,139 @@
 # MCP Server
 
-Node.js (ESM) HTTP сервер кој изложува Model Context Protocol (MCP) алатки
-(Streamable HTTP + legacy SSE транспорт) заедно со сопствен OAuth 2.0 +
-PKCE авторизациски flow и пребарлива knowledge база (ln-ashlar документација).
+[![M8ven Verified](https://m8ven.ai/badge/mcp/livenetworks-ln-ashlar-mcp-1u4m71)](https://m8ven.ai/mcp/livenetworks-ln-ashlar-mcp-1u4m71 ) <!-- m8ven-verify: b920ef8a7aa6c19c0152cd3c3c872cbc -->
 
-## Технологии
+Node.js (ESM) HTTP server exposing Model Context Protocol (MCP) tools (Streamable HTTP + legacy SSE transport) along with a custom OAuth 2.0 + PKCE authorization flow and a searchable knowledge base ([ln-ashlar](https://github.com/livenetworks/ln-ashlar) documentation).
+
+## Technologies
 
 - Node.js, Express 5
-- `@modelcontextprotocol/sdk` (Streamable HTTP и SSE транспорти)
-- `jsonwebtoken` за authorization code / access token
-- `fuse.js` за fuzzy пребарување на документацијата
-- `winston` + `winston-daily-rotate-file` за логирање
+- `@modelcontextprotocol/sdk` (Streamable HTTP and SSE transports)
+- `jsonwebtoken` for authorization code / access token
+- `fuse.js` for fuzzy documentation search
+- `winston` + `winston-daily-rotate-file` for logging
 
-## Инсталација
+## Installation
 
 ```bash
 npm install
 ```
 
-Копирај ги примерите на конфигурациите и пополни ги со реални вредности
-(двата фајла се во `.gitignore` и НЕ се commit-уваат):
+Copy the example configuration files and populate them with real values (both files are in `.gitignore` and are NOT committed):
 
 ```bash
 cp config/auth.example.json config/auth.json
 cp config/jwt.example.json config/jwt.json
 ```
 
-- `config/auth.json` — листа на корисници (`{ users: { <username>: { clientId, token } } }`).
-- `config/jwt.json` — тајна (`secret`) за потпишување на JWT кодови/токени.
-  Генерирај силна случајна вредност (на пр. `openssl rand -base64 48`).
-- `config/oauth.json` — веќе постои во репото (не содржи тајни), ги дефинира
-  дозволените `redirect_uri` вредности (`allowedRedirects`) и дали се
-  дозволени loopback (`localhost`/`127.0.0.1`) редиректи.
-- `config/gemini.json` — конфигурација за `review_plan` алатката (копирај од
-  `config/gemini.example.json`); нема тајни во фајлот — автентикацијата за
-  gemini-cli оди преку gemini-cli-ните сопствени енкриптирани credentials во
-  runner-овиот `HOME` (`~/.gemini/gemini-credentials.json`), не преку овој репо.
+- `config/auth.json` — list of users (`{ users: { <username>: { clientId, token } } }`).
+- `config/jwt.json` — secret (`secret`) for signing JWT codes/tokens. Generate a strong random value (e.g., `openssl rand -base64 48`).
+- `config/oauth.json` — already present in the repository (contains no secrets), defines allowed `redirect_uri` values (`allowedRedirects`) and whether loopback (`localhost`/`127.0.0.1`) redirects are allowed.
+- `config/gemini.json` — configuration for the `review_plan` tool (copy from `config/gemini.example.json`); contains no secrets in the file — authentication for gemini-cli uses gemini-cli's own encrypted credentials in the runner's `HOME` (`~/.gemini/gemini-credentials.json`), not via this repo.
 
-## Корпус — каде живее документацијата
+## Corpus — Where Documentation Lives
 
-Серверот НЕМА вградена локација за документацијата. Каде се наоѓа ln-ashlar
-(и кој било друг продукт-репо со `docs-mcp/` фолдер) го одредува **една
-променлива на околината**:
+The server DOES NOT have a built-in location for documentation. Where [ln-ashlar](https://github.com/livenetworks/ln-ashlar) (and any other product repository with a `docs-mcp/` folder) resides is determined by **a single environment variable**:
 
-- `DOCS_CORPUS_ROOTS` — comma-separated листа на **репо-корени** (не на
-  `docs-mcp` подфолдерот). Секој корен се чита само ако има `docs-mcp/`.
-- `ASHLAR_DOCS_REPO` — легаси еднокорен fallback, се користи само кога
-  `DOCS_CORPUS_ROOTS` не е поставена.
+- `DOCS_CORPUS_ROOTS` — comma-separated list of **repository roots** (not the `docs-mcp` subfolder). Each root is read only if it contains `docs-mcp/`.
+- `ASHLAR_DOCS_REPO` — legacy single-root fallback, used only when `DOCS_CORPUS_ROOTS` is not set.
 
-Ист knob ги храни сите потрошувачи — ashlar алатките
-(`tools/ashlar/corpus.js`, `configuredRoots()`), legacy knowledge индексот
-(`tools/knowledge/loader.js`) и `get_ln_schema`. Нема резервна копија во
-репово: ако ниту еден корен не ја носи шемата, `get_ln_schema` враќа грешка
-наместо застарен одговор.
+The same setting feeds all consumers — ashlar tools (`tools/ashlar/corpus.js`, `configuredRoots()`), legacy knowledge index (`tools/knowledge/loader.js`), and `get_ln_schema`. There is no backup copy in this repo: if no root contains the schema, `get_ln_schema` returns an error instead of a stale response.
 
-Ако променливата не е поставена, серверот сепак се крева — алатките
-пријавуваат „not configured" наместо да паднат.
+If the variable is not set, the server still boots up — tools report "not configured" instead of crashing.
 
-### Routing contract — `docs-mcp/component-router.md`
+### Routing Contract — `docs-mcp/component-router.md`
 
-Секој корен **треба** да носи `docs-mcp/component-router.md` — матрица за избор
-на компонента (за што се користи, за што НЕ се користи). Тоа е единствениот
-top-level фајл што серверот го **служи без да го индексира како документ**:
+Every root **should** carry `docs-mcp/component-router.md` — a matrix for component selection (what it is used for, what it is NOT used for). This is the only top-level file served by the server **without indexing it as a document**:
 
-- Телото му се инјектира verbatim во MCP `instructions` при `initialize`
-  (`tools/ashlar/instructions.js`, `buildInstructions()`). Тоа е единствениот
-  push канал во MCP — клиентот го става во system prompt-от на моделот пред
-  првиот токен, без ниту еден tool повик. Со тоа моделот ја знае точната
-  компонента однапред, наместо да прелистува документација и да погодува.
-- Истата матрица се служи и на барање преку MCP алатката `get_component_router`
-  (опционален `root` за еден корен).
-- Описите на `get_markup`, `get_component`, `list_components` и `search_docs`
-  го повторуваат правилото (`ROUTER_FIRST_HINT`) — втора ограда токму во
-  моментот кога се бира компонента.
+- Its body is injected verbatim into MCP `instructions` during `initialize` (`tools/ashlar/instructions.js`, `buildInstructions()`). This is the only push channel in MCP — the client places it into the model's system prompt before the first token, without any tool call. This allows the model to know the exact component in advance, rather than browsing documentation and guessing.
+- The same matrix is also served on demand via the `get_component_router` MCP tool (optional `root` for a single root).
+- Descriptions of `get_markup`, `get_component`, `list_components`, and `search_docs` repeat the rule (`ROUTER_FIRST_HINT`) — a second safeguard at the moment a component is chosen.
 
-Се чита сурово: **нема frontmatter**, не поминува низ `parseDoc()` и намерно НЕ
-влегува во `docs`/`registry`/`byName`/`fuse`. Двете причини: не му треба
-frontmatter, и името не смее да се судри со вистинската `ln-router` компонента
-во `components/`.
+It is read raw: **no frontmatter**, does not pass through `parseDoc()`, and intentionally does NOT enter `docs`/`registry`/`byName`/`fuse`. Two reasons: it does not need frontmatter, and its name must not collide with the actual `ln-router` component in `components/`.
 
-Федерација: N корени ⇒ N секции во `instructions`, секоја со заглавје
-`--- <rootLabel> / component router ---`, по редот на `DOCS_CORPUS_ROOTS`.
-Корен без таков фајл е легален — само не придонесува секција (се логира
-`console.warn`). Кога ниту еден корен нема, серверот воопшто не праќа
-`instructions`.
+Federation: N roots ⇒ N sections in `instructions`, each with a header `--- <rootLabel> / component router ---`, in the order of `DOCS_CORPUS_ROOTS`. A root without such a file is valid — it simply does not contribute a section (logs a `console.warn`). When no root has one, the server does not send `instructions` at all.
 
-`instructions` се градат **по сесија**, не при подигање — значи commit во
-корпусот стигнува до следната сесија без рестарт на серверот (важи истото
-git-HEAD правило од „Освежување на документацијата" подолу).
+`instructions` are built **per session**, not on startup — meaning a commit to the corpus reaches the next session without restarting the server (following the same git-HEAD rule from "Documentation Refresh" below).
 
-Клон во `resources/` е една можна поставка, не барање. Локално може директно
-да се покаже на работниот checkout:
+A clone in `resources/` is one possible setup, not a requirement. Locally, it can directly point to your working checkout:
 
 ```bash
-DOCS_CORPUS_ROOTS=/пат/до/ln-ashlar node server.js
+DOCS_CORPUS_ROOTS=/path/to/ln-ashlar node server.js
 ```
 
 ```powershell
 $env:DOCS_CORPUS_ROOTS = 'c:/laragon/www/ln-ashlar'; node server.js
 ```
 
-## Стартување
+## Running
 
 ```bash
-DOCS_CORPUS_ROOTS=/пат/до/ln-ashlar PORT=8080 node server.js
+DOCS_CORPUS_ROOTS=/path/to/ln-ashlar PORT=8080 node server.js
 ```
 
-Серверот слуша на `0.0.0.0:<PORT>` (по default `8080`).
+The server listens on `0.0.0.0:<PORT>` (default `8080`).
 
-**Напомена:** серверот НЕ прави hot-reload на JS кодот — секоја промена во
-`server.js`, `routes/`, `middleware/` или `tools/` бара рестарт на процесот
-за да влезе во сила. Исклучок се содржината на корпусот и корисниците во
-`config/auth.json` — тие можат да се освежат без рестарт (видете подолу).
+**Note:** The server does NOT hot-reload JS code — any changes in `server.js`, `routes/`, `middleware/`, or `tools/` require a process restart to take effect. Exceptions are corpus contents and users in `config/auth.json` — they can be refreshed without a restart (see below).
 
-## Преглед на endpoints
+## Endpoints Overview
 
-### OAuth 2.0 + PKCE flow
+### OAuth 2.0 + PKCE Flow
 
-- `GET /authorize` — прикажува HTML login страница (login темплејт во
-  `views/login.html`). Прифаќа `client_id`, `redirect_uri`, `state`,
-  `response_type`, `code_challenge`, `code_challenge_method` (query).
-- `POST /authorize` — обработува најава (username/token). При успех
-  издава краткотраен (5 мин) еднократен authorization `code` — или
-  редиректира кон `redirect_uri` со `code`/`state`, или го враќа `code`
-  директно во JSON одговор ако `redirect_uri` не е даден.
-  Заштитено со rate-limit (10 обиди / 15 мин по IP).
-- `POST /token` — разменува `code` (+ `code_verifier` за PKCE S256) за
-  `access_token` (важи 24ч). Секој `code` е еднократен. Заштитено со
-  rate-limit (30 обиди / 15 мин по IP).
+- `GET /authorize` — displays an HTML login page (login template in `views/login.html`). Accepts `client_id`, `redirect_uri`, `state`, `response_type`, `code_challenge`, `code_challenge_method` (query).
+- `POST /authorize` — handles login (username/token). On success, issues a short-lived (5 min) one-time authorization `code` — either redirects to `redirect_uri` with `code`/`state`, or returns `code` directly in a JSON response if `redirect_uri` is omitted. Protected by rate-limiting (10 attempts / 15 min per IP).
+- `POST /token` — exchanges `code` (+ `code_verifier` for PKCE S256) for an `access_token` (valid 24h). Each `code` is single-use. Protected by rate-limiting (30 attempts / 15 min per IP).
 
-Само `redirect_uri` вредности од `config/oauth.json` (`allowedRedirects`)
-или loopback адреси (ако `allowLoopbackRedirects: true`) се прифаќаат.
+Only `redirect_uri` values from `config/oauth.json` (`allowedRedirects`) or loopback addresses (if `allowLoopbackRedirects: true`) are accepted.
 
-### MCP транспорти (бараат автентикација)
+### MCP Transports (Require Authentication)
 
-- `ALL /` и `ALL /mcp` — Streamable HTTP транспорт (протокол верзија
-  `2025-11-25`). Сесиите (`mcp-session-id`) се врзани за корисникот што ги
-  иницирал — обид да се употреби туѓа сесија враќа `403`.
-- `GET /sse` и `POST /messages` — legacy SSE транспорт (протокол верзија
-  `2024-11-05`), исто врзан за корисник по сесија.
+- `ALL /` and `ALL /mcp` — Streamable HTTP transport (protocol version `2025-11-25`). Sessions (`mcp-session-id`) are bound to the user who initiated them — attempting to use another user's session returns `403`.
+- `GET /sse` and `POST /messages` — legacy SSE transport (protocol version `2024-11-05`), also bound to user per session.
 
-Автентикација (за сите горенаведени + `/knowledge/*`): `Authorization: Bearer <token>`
-или како API-клуч (заедно со `X-Client-Id` header, или `client-id`/`token`
-query параметри — само на `/sse` и `/messages`) или како JWT `access_token`
-издаден од `/token`.
+Authentication (for all endpoints above + `/knowledge/*`): `Authorization: Bearer <token>` or as an API key (along with `X-Client-Id` header, or `client-id`/`token` query parameters — only on `/sse` and `/messages`) or as a JWT `access_token` issued by `/token`.
 
-### Knowledge база
+### Knowledge Base
 
-Legacy индекс над **сите** `.md` фајлови во конфигурираните корени — вклучно
-internals слојот (`js/ln-*/README.md`, `docs/architecture/`) што ashlar
-корпусот намерно не го индексира. Комплементарен е на `search_docs`, не
-дупликат. `node_modules/` и `.git/` се прескокнуваат.
+Legacy index over **all** `.md` files in configured roots — including the internals layer (`js/ln-*/README.md`, `docs/architecture/`) which the ashlar corpus intentionally does not index. It is complementary to `search_docs`, not a duplicate. `node_modules/` and `.git/` are skipped.
 
-Патеките во резултатите се префиксирани со ознаката на коренот
-(`ln-ashlar/docs/css/mixins.md`) за да останат недвосмислени кога има повеќе
-корени; `knowledge_read` прифаќа и таква и обична репо-релативна патека.
+Paths in results are prefixed with the root label (`ln-ashlar/docs/css/mixins.md`) to remain unambiguous when multiple roots exist; `knowledge_read` accepts both prefixed and standard repo-relative paths.
 
-- `GET /knowledge/search?q=<термин>` — fuzzy пребарување. Истата споделена
-  `search()` функција (`tools/knowledge/search.js`) ја користат и REST рутата
-  и MCP алатката `knowledge_search`. Кога нема конфигуриран корен враќа `503`
-  со `not_configured`.
-- `POST /knowledge/reload` — повторно вчитува ги `.md` фајловите од диск и
-  го преградува Fuse индексот, без рестарт на процесот. Враќа
-  `{ reloaded: true, docs: <број на документи> }`. Секој reload се логира
-  со Winston.
+- `GET /knowledge/search?q=<term>` — fuzzy search. The same shared `search()` function (`tools/knowledge/search.js`) is used by both the REST route and the `knowledge_search` MCP tool. Returns `503` with `not_configured` when no root is configured.
+- `POST /knowledge/reload` — reloads `.md` files from disk and rebuilds the Fuse index without a process restart. Returns `{ reloaded: true, docs: <doc_count> }`. Every reload is logged with Winston.
 
 ### Healthcheck
 
-- MCP tool `healthcheck` (види `tools/healthcheck.js`), достапен преку
-  MCP транспортите откако е воспоставена сесија.
+- MCP tool `healthcheck` (see `tools/healthcheck.js`), available via MCP transports once a session is established.
 
 ### review_plan
 
-MCP алатка (`tools/review_plan.js`) што праќа план (архитектонски или
-имплементациски) на независен Gemini рецензент преку `gemini-cli`.
-Автентикацијата кон Gemini оди преку gemini-cli-ните сопствени credentials,
-зачувани енкриптирано во runner-овиот HOME (`~/.gemini/gemini-credentials.json`,
-моментално API клуч) — нема тајни ни env варијабли во овој репо. Алатката е
-stateless — повикувачкиот агент ја води јамката: draft → review → revise,
-најмногу 3 итерации; на итерации 2–3 се проследува `previous_feedback`; застани
-на `APPROVE` или итерација 3. Конфигурација: `config/gemini.json` (модел,
-timeout, concurrency, max iterations, изолиран runner `HOME`/`cwd`). Логира:
-api-key id, plan_type, iteration, chars in/out, времетраење, verdict, модел.
-Безбедност: gemini-cli е ограничен на чист текст-влез/текст-излез
-(`coreTools: []`, изолиран `HOME`/празен `cwd`, никогаш `--yolo`). Ревизорот
-има read-only MCP пристап до docs корпусот на истиот сервер (клуч
-`gemini-reviewer`, `review_plan` исклучен од неговите алатки против
-рекурзија); поради ова agentic tool round-trips, серверскиот timeout е 240s
-(`config/gemini.json`, `timeoutMs`). Секој повик се логира и во посебен
-целосен аудит лог (`logs/review-audit-*.log`) со целосната содржина на
-prompt-от и одговорот, што може да се исклучи со `auditLog: false` во
-`config/gemini.json`. По завршување на јамката (APPROVE или итерација 3),
-повикувачкиот агент може да направи дополнителен повик со `wrap_up: true`
-(проследувајќи ги сите претходни критики во `previous_feedback`) за да добие
-кратко завршно резиме на текот на целата ревизија.
+MCP tool (`tools/review_plan.js`) that sends a plan (architectural or implementation) to an independent Gemini reviewer via `gemini-cli`. Authentication to Gemini uses gemini-cli's own credentials stored securely in the runner's HOME (`~/.gemini/gemini-credentials.json`, currently API key) — no secrets or environment variables exist in this repo. The tool is stateless — the calling agent manages the loop: draft → review → revise, up to 3 iterations; on iterations 2–3, `previous_feedback` is passed along; stops on `APPROVE` or iteration 3. Configuration: `config/gemini.json` (model, timeout, concurrency, max iterations, isolated runner `HOME`/`cwd`). Logs: api-key id, plan_type, iteration, chars in/out, duration, verdict, model. Security: gemini-cli is restricted to pure text input/text output (`coreTools: []`, isolated `HOME`/empty `cwd`, never `--yolo`). The reviewer has read-only MCP access to the docs corpus on the same server (`gemini-reviewer` key, `review_plan` excluded from its tools to prevent recursion); due to these agentic tool round-trips, server timeout is 240s (`config/gemini.json`, `timeoutMs`). Each call is also logged to a dedicated audit log (`logs/review-audit-*.log`) with full prompt and response content, which can be disabled via `auditLog: false` in `config/gemini.json`. After loop completion (APPROVE or iteration 3), the calling agent can make an optional call with `wrap_up: true` (passing all previous feedback in `previous_feedback`) to receive a brief final summary of the entire review process.
 
-## Управување со корисници
+## User Management
 
-Корисниците се читаат од `config/auth.json` преку `middleware/user-store.js`,
-кој го кешира парсираниот фајл и автоматски го превчитува кога ќе се смени
-`mtime` на фајлот. Тоа значи: додавање/бришење корисник во `config/auth.json`
-влегува во сила веднаш, БЕЗ рестарт на серверот (важи и за `/authorize`,
-`/token` и за MCP автентикацијата преку `middleware/auth.js`).
+Users are loaded from `config/auth.json` via `middleware/user-store.js`, which caches the parsed file and automatically reloads it when the file's `mtime` changes. This means: adding/deleting a user in `config/auth.json` takes effect immediately, WITHOUT restarting the server (applies to `/authorize`, `/token`, and MCP authentication via `middleware/auth.js`).
 
-## Освежување на документацијата
+## Documentation Refresh
 
-Двата индекса имаат **различни** модели на свежина — ниту еден не бара рестарт,
-но не се освежуваат на ист начин:
+The two indices have **different** freshness models — neither requires a restart, but they do not refresh in the same way:
 
-- **Legacy knowledge индекс** (`/knowledge/*`, `knowledge_search`,
-  `knowledge_read`) — превчитување на барање: повикај `POST /knowledge/reload`
-  со валидна автентикација. Ги фаќа и некомитираните измени на диск.
-- **Ashlar корпус** (`search_docs`, `get_component`, `get_markup`,
-  `validate_docs`, `get_ln_schema`, …) — се превчитува автоматски кога ќе се
-  смени git HEAD на коренот (`gitSignature()`, `tools/ashlar/corpus.js`).
-  Значи **некомитирана** измена во коренот НЕ се гледа, ни по `reload`;
-  промената влегува дури откако е commit-ирана (и на серверот — откако тој
-  ќе pull-ира).
+- **Legacy Knowledge Index** (`/knowledge/*`, `knowledge_search`, `knowledge_read`) — on-demand reload: call `POST /knowledge/reload` with valid authentication. Also catches uncommitted disk changes.
+- **Ashlar Corpus** (`search_docs`, `get_component`, `get_markup`, `validate_docs`, `get_ln_schema`, …) — reloads automatically when the root's git HEAD changes (`gitSignature()`, `tools/ashlar/corpus.js`). Thus, an **uncommitted** change in the root is NOT visible, even after `reload`; the change only reflects after it is committed (and on the server — after it pulls).
 
-## Проверки
+## Checks
 
-Четири независни проверки — секоја покрива нешто што другите три не го покриваат:
+Four independent checks — each covering aspects the other three do not:
 
 ```bash
-npm test                                                    # 1. однесување
-npm run sync:ln-attrs -- --check --root=/пат/до/ln-ashlar   # 2. дрифт
-npm run lint:snippets                                       # 3. ghost атрибути + ATTR.*
-npm run smoke:generators                                    # 4. договор темплејт↔builder
+npm test                                                    # 1. behavior
+npm run sync:ln-attrs -- --check --root=/path/to/ln-ashlar   # 2. drift
+npm run lint:snippets                                       # 3. ghost attributes + ATTR.*
+npm run smoke:generators                                    # 4. contract template↔builder
 ```
 
-1. **Однесување** — `node --test`, 203 testa. Единственото што ја покрива безбедносната површина: цел OAuth + PKCE flow, `/mcp` автентикација, врзување на MCP сесија за корисник, path traversal во `knowledge_read`. Интеграцискиот тест крева вистински сервер на `PORT=8099` и ги чита реалните креденцијали од `config/auth.json` во runtime — не ги хардкодирај.
-2. **Дрифт** — `attributes.generated.js` мора да е свеж наспроти ln-ashlar `js/**` + `scss/**`. Exit 1 кога ln-ashlar се поместил под генераторите. Пушти го по секој pull на ln-ashlar.
-3. **Ghost атрибути + `ATTR.*`** — секој `data-ln-*` во `_src/**.html` и во builder-ите мора да постои во тој сет, и секоја `ATTR.x` референца мора да се резолвира. Нерезолвирана дава `undefined="…"` во излезот — валиден HTML, мртов атрибут.
-4. **Договор темплејт↔builder** — сите 19 генератори се рендерираат со строг режим: секој `{{key}}` што builder-от го подава мора да постои во темплејтот.
+1. **Behavior** — `node --test`, 203 tests. The only suite covering the security surface: full OAuth + PKCE flow, `/mcp` authentication, binding MCP sessions to users, path traversal in `knowledge_read`. The integration test boots a real server on `PORT=8099` and reads real credentials from `config/auth.json` at runtime — do not hardcode them.
+2. **Drift** — `attributes.generated.js` must be fresh against [ln-ashlar](https://github.com/livenetworks/ln-ashlar) `js/**` + `scss/**`. Exit 1 when [ln-ashlar](https://github.com/livenetworks/ln-ashlar) moves ahead of generators. Run after every pull of [ln-ashlar](https://github.com/livenetworks/ln-ashlar).
+3. **Ghost attributes + `ATTR.*`** — every `data-ln-*` in `_src/**.html` and in builders must exist in that set, and every `ATTR.x` reference must resolve. Unresolved references output `undefined="…"` — valid HTML, dead attribute.
+4. **Contract template↔builder** — all 19 generators render under strict mode: every `{{key}}` provided by a builder must exist in the template.
 
-Пушти ги сите четири пред PR.
+Run all four checks before creating a PR.
