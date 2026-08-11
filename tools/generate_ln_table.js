@@ -13,8 +13,7 @@ export const definition = {
 		"Генерира ln-ashlar табела во SSR или Data-Driven режим. " +
 		"Режимот 'data-driven' БАРА `source` (id на ln-data-store) — data-ln-table-source е тоа што го вклучува режимот. " +
 		"Без извор на податоци подај 'ssr'. " +
-		"Во data-driven (со `source`) сортирањето го поседува store-от: <thead> добива data-ln-sort, " +
-		"а <th> data-ln-sort-field — data-ln-table-col-sort сам по себе НЕ сортира. " +
+		"Во data-driven (со `source`) сортирањето го поседува store-от преку <ul data-ln-sort> контролите внатре во <th>. " +
 		"data-ln-table-sort е само за SSR. Виртуелизацијата се конфигурира на табелата " +
 		"(data-ln-table-window), не на store-от. Empty state оди како " +
 		"<template data-ln-table-empty> внатре во коренот.",

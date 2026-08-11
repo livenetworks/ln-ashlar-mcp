@@ -14,8 +14,7 @@ export const definition = {
 		"Кликот циклира null → asc → desc → null и праќа ln-sort:change; класите " +
 		"ln-sort-asc/ln-sort-desc се исцртуваат од ехото ln-data-store:query-changed, " +
 		"па две контроли врз ист store не можат да се разидат. " +
-		"За сортирање во заглавје на табела користи generate_ln_table со `source` — таму " +
-		"data-ln-sort оди на <thead>, а data-ln-sort-field на <th>.",
+		"За сортирање во заглавје на табела користи generate_ln_table со `source`.",
 	inputSchema: {
 		target: z.string().describe("id на ln-data-store што го троши барањето за сортирање"),
 		fields: z

@@ -247,6 +247,18 @@ function validateRoot(rootPath, rootIndex) {
 
     const topLevelSections = parsed.sections.filter((s) => s.level === 2);
 
+    // CONTRACT VALIDATION RULES:
+    //
+    // INTENTIONALLY RELAXED:
+    // 1. None-declarations: Prose sentences (e.g. "None.") are allowed under Attributes/Events headings when no table is present.
+    // 2. Legitimate §4: Section 4 ("State & Persistence") is optional for stateless components (7 or 8 top-level sections allowed).
+    // 3. Service docs: Documents with `classification: service` are non-DOM services and exempt from DOM component section titles and mandatory ```html blocks.
+    //
+    // STRICTLY ENFORCED (MUST NOT REGRESS):
+    // 1. Duplicate section numbers: Top-level section numbers must be strictly unique and ascending 1..N.
+    // 2. First section for skills/guides/doctrine: Must be "## Summary".
+    // 3. Mandatory ```html block: Required in Section 2 for DOM components (simple/coordinator).
+    // 4. Canonical heading titles: Section 2 and Section 3 must have exact canonical titles for simple/coordinator components.
     if (f.folder === 'components') {
       const numbers = topLevelSections.map((s) => s.number);
       const isAscendingUnique = numbers.every((n, i) => n !== null && (i === 0 || n > numbers[i - 1]));

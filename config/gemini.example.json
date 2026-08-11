@@ -1,5 +1,5 @@
 {
-	"model": "gemini-3.5-flash-high",
+	"model": "gemini-3.6-flash-high",
 	"timeoutMs": 240000,
 	"concurrency": 2,
 	"maxIterations": 3,

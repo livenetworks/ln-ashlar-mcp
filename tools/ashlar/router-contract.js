@@ -34,5 +34,4 @@ generate_ln_* tool, select the component from the routing matrix below.
 - Follow the routing steps stated at the top of each matrix.`;
 
 /** Го рестатира договорот на описите на алатките што претходат на markup излез. */
-export const ROUTER_FIRST_HINT =
-  '[Router-first: pick the component from the routing contract in the server instructions (or call get_component_router) before using this.] ';
+export const ROUTER_FIRST_HINT = '';

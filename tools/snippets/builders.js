@@ -314,7 +314,7 @@ export function buildCoordinator({
  */
 function sortButton(label) {
 	const icon = (state, symbol) =>
-		`\t<svg class="ln-icon ln-icon-sort-${state}" aria-hidden="true"><use href="#ln-${symbol}"></use></svg>`;
+		`\t<svg class="ln-icon ln-icon-sort-${state}" aria-hidden="true"><use href="#ln-icon-${symbol}"></use></svg>`;
 	return (
 		`<button type="button" class="table-sort" ${ATTR.tableColSort} aria-label="Сортирај по ${escapeHtml(label)}">\n` +
 		icon("none", "arrows-sort") +
@@ -398,7 +398,7 @@ export function buildTable({
 			const popoverId = `filter-${id}-${col.field}`;
 			bits.push(
 				`<button type="button" class="table-filter" ${ATTR.tableColFilter} ${ATTR.popoverFor}="${escapeHtml(popoverId)}" aria-label="Филтрирај по ${escapeHtml(col.label)}">\n` +
-					`\t<svg class="ln-icon" aria-hidden="true"><use href="#ln-filter"></use></svg>\n` +
+					`\t<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-filter"></use></svg>\n` +
 					`</button>`
 			);
 			popovers.push(buildFilterPopover({ popoverId, targetId: queryTarget, column: col }));
@@ -407,16 +407,10 @@ export function buildTable({
 		// data-ln-table-col СЕКОГАШ — порано filterable колона го губеше и
 		// оставаше ln-table без мапирање кон полето.
 		//
-		// data-ln-sort-field оди на <th>, НЕ на копчето: CSS индикаторот е
-		// descendant комбинатор `.ln-sort-asc .table-sort`, па класата мора да
-		// слета на предок на иконите.
+		// data-ln-sort е на <ul data-ln-sort> контролата внатре во <th>, не на <thead>/<th>.
 		const colAttrs =
 			attr(ATTR.tableCol, col.field) +
-			(col.sortable
-				? dataDriven
-					? attr(ATTR.sortField, col.field)
-					: attr(ATTR.tableSort, col.sort_type || "string")
-				: "") +
+			(!dataDriven && col.sortable ? attr(ATTR.tableSort, col.sort_type || "string") : "") +
 			(col.filterable ? attr(ATTR.tableFilterCol, col.field) : "");
 
 		headerCols.push(`<th${colAttrs}>\n${indentBlock(bits.join("\n"), 1)}\n</th>`);
@@ -442,7 +436,7 @@ export function buildTable({
 			cells.push(
 				`<td>\n` +
 					`\t<a${href} class="ln-btn ln-btn-icon"${modalFor}${fillForm} ${ATTR.tableRowAction}="edit" aria-label="Уреди">\n` +
-					`\t\t<svg class="ln-icon" aria-hidden="true"><use href="#ln-edit"></use></svg>\n` +
+					`\t\t<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-edit"></use></svg>\n` +
 					`\t</a>\n` +
 					`</td>`
 			);
@@ -471,9 +465,7 @@ export function buildTable({
 		{
 			id,
 			root_attrs: raw(rootAttrs),
-			// data-ln-sort на <thead> е и опт-аут: ln-table.js се повлекува од
-			// сопственото сортирање штом го види.
-			thead_attrs: raw(dataDriven && hasSortable ? attr(ATTR.sort, queryTarget) : "")
+			thead_attrs: ""
 		},
 		{
 			empty_template: emptySlot,
@@ -521,7 +513,7 @@ export function buildFilterPopover({ popoverId, targetId, column }) {
 /**
  * Самостојна `ln-sort` контрола.
  *
- * Не поседува податоци: кликот испраќа `ln-sort:changed` кон store-от, а
+ * Не поседува податоци: кликот испраќа `ln-sort:change` кон store-от, а
  * класите `ln-sort-asc`/`ln-sort-desc` се исцртуваат дури од ехото
  * `ln-data-store:query-changed`. Затоа две контроли врз ист store не можат да
  * се разидат.
@@ -535,9 +527,9 @@ export function buildFilterPopover({ popoverId, targetId, column }) {
 export function buildSortControl({ target, fields = [], id }) {
 	const items = fields
 		.map((f) => {
-			const fieldAttr = f.field ? ` ${attr(ATTR.sortField, f.field)}` : "";
+			const fieldAttr = f.field ? attr(ATTR.sortField, f.field) : "";
 			return (
-				`<ul${attr("id", id)}${attr(ATTR.sort, target)}${fieldAttr} ${attr(ATTR.sortState, "none")}>\n` +
+				`<ul${attr("id", id)}${attr(ATTR.sort, target)}${fieldAttr}${attr(ATTR.sortState, "none")}>\n` +
 				`  <li><button type="button" ${attr(ATTR.sortDir, "asc")} aria-label="Sort ${escapeHtml(f.label)} ascending"><svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-arrows-sort"></use></svg></button></li>\n` +
 				`  <li><button type="button" ${attr(ATTR.sortDir, "desc")} aria-label="Sort ${escapeHtml(f.label)} descending"><svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-arrow-up"></use></svg></button></li>\n` +
 				`  <li><button type="button" ${attr(ATTR.sortDir, "none")} aria-label="Remove sort for ${escapeHtml(f.label)}"><svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-arrow-down"></use></svg></button></li>\n` +
@@ -570,7 +562,7 @@ export function buildEmptyState({
 	id,
 	title = "Нема пронајдено податоци",
 	description = "Нема внесени записи што одговараат на барањето.",
-	iconId = "ln-inbox",
+	iconId = "ln-icon-inbox",
 	actionLabel,
 	actionModalId
 }) {
@@ -583,9 +575,11 @@ export function buildEmptyState({
 			`</div>`;
 	}
 
+	const normalizedIcon = iconId.startsWith("ln-icon-") ? iconId : `ln-icon-${iconId.replace(/^ln-/, "")}`;
+
 	return compileTemplate(
 		loadTemplate("components/empty-state.html"),
-		{ id, title, description, icon_id: iconId },
+		{ id, title, description, icon_id: normalizedIcon },
 		{ action: actionSlot }
 	);
 }
@@ -641,7 +635,7 @@ export function buildModal({
 		`<header class="ln-modal-header">\n` +
 		`\t<h2 class="ln-modal-title">\n${indentBlock(titleHtml, 2)}\n\t</h2>\n` +
 		`\t<button type="button" class="ln-modal-close" ${ATTR.modalClose} aria-label="Затвори">\n` +
-		`\t\t<svg class="ln-icon" aria-hidden="true"><use href="#ln-x"></use></svg>\n` +
+		`\t\t<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-x"></use></svg>\n` +
 		`\t</button>\n` +
 		`</header>`;
 

@@ -146,3 +146,25 @@ describe("validateCorpus — multi-root grouping", () => {
     assert.ok(results[1].files.some((f) => f.file === "components/ln-second.md"));
   });
 });
+
+describe("validateCorpus — scope boundary regression suite", () => {
+  const [root] = validateCorpus([FIXTURE_REPO]);
+
+  test("service classification is classification-aware (passes without DOM html section)", () => {
+    const serviceEntry = root.files.find((r) => r.file === "components/ln-fake-service.md");
+    assert.ok(serviceEntry);
+    assert.deepEqual(serviceEntry.problems, []);
+  });
+
+  test("simple classification strictly enforces canonical heading titles and html blocks", () => {
+    const nohtmlEntry = root.files.find((r) => r.file === "components/ln-nohtml.md");
+    assert.ok(nohtmlEntry);
+    assert.ok(nohtmlEntry.problems.some((p) => p.includes("Section 2 must contain at least one ```html block")));
+  });
+
+  test("duplicate section numbers and missing sections are strictly flagged", () => {
+    const brokenEntry = root.files.find((r) => r.file === "components/ln-broken.md");
+    assert.ok(brokenEntry);
+    assert.ok(brokenEntry.problems.some((p) => p.includes("Expected exactly 7 top-level")));
+  });
+});

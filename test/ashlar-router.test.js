@@ -160,21 +160,7 @@ describe("get_component_router", () => {
 });
 
 describe("router-first reinforcement on the lookup tools", () => {
-  test("the four corpus lookup tools restate the contract in their description", async () => {
-    const tools = await Promise.all(
-      ["get_markup", "get_component", "list_components", "search_docs"].map((t) =>
-        import(`../tools/${t}.js`)
-      )
-    );
-    for (const tool of tools) {
-      assert.ok(
-        tool.definition.description.startsWith(ROUTER_FIRST_HINT),
-        `${tool.name} description must open with the router-first hint`
-      );
-    }
-  });
-
-  test("the hint names the tool that serves the matrix", () => {
-    assert.match(ROUTER_FIRST_HINT, /get_component_router/);
+  test("ROUTER_FIRST_HINT is empty (imperative prefix mandate removed from tool descriptions)", () => {
+    assert.equal(ROUTER_FIRST_HINT, "");
   });
 });

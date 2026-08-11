@@ -46,9 +46,11 @@ export const handler = async ({ name: docName, domain }) => {
   const emits = events.filter((e) => e.direction === "Emits");
   const listens = events.filter((e) => e.direction === "Listens");
 
+  const escapePipe = (val) => (val == null ? "" : String(val).replace(/\|/g, "\\|"));
+
   const renderRows = (rows) =>
     rows
-      .map((e) => `| ${e.event} | ${e.cancelable ?? ""} | ${e.detail ?? ""} | ${e.description ?? ""} |`)
+      .map((e) => `| ${escapePipe(e.event)} | ${escapePipe(e.cancelable)} | ${escapePipe(e.detail)} | ${escapePipe(e.description)} |`)
       .join("\n");
 
   const header = "| Event | Cancelable | `detail` Object | Description |\n| --- | --- | --- | --- |";
