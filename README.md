@@ -58,7 +58,7 @@ Federation: N roots ⇒ N sections in `instructions`, each with a header `--- <r
 A clone in `resources/` is one possible setup, not a requirement. Locally, it can directly point to your working checkout:
 
 ```bash
-DOCS_CORPUS_ROOTS=/path/to/ln-ashlar node server.js
+DOCS_CORPUS_ROOTS=/home/mcp/ln-ashlar node server.js
 ```
 
 ```powershell
@@ -67,8 +67,51 @@ $env:DOCS_CORPUS_ROOTS = 'c:/laragon/www/ln-ashlar'; node server.js
 
 ## Running
 
+### Linux Startup (CLI)
+
+Start the server directly on Linux with the `ln-ashlar` corpus path:
+
 ```bash
-DOCS_CORPUS_ROOTS=/path/to/ln-ashlar PORT=8080 node server.js
+DOCS_CORPUS_ROOTS=/home/mcp/ln-ashlar PORT=8080 node server.js
+```
+
+Or using `ASHLAR_DOCS_REPO`:
+
+```bash
+ASHLAR_DOCS_REPO=/home/mcp/ln-ashlar PORT=8080 npm start
+```
+
+### Linux Service (Systemd)
+
+To run the server continuously in the background on Linux as a `systemd` service:
+
+1. Create `/etc/systemd/system/ln-ashlar-mcp.service`:
+
+```ini
+[Unit]
+Description=LN Ashlar MCP Server
+After=network.target
+
+[Service]
+Type=simple
+User=mcp
+WorkingDirectory=/home/mcp/server
+Environment=PORT=8080
+Environment=DOCS_CORPUS_ROOTS=/home/mcp/ln-ashlar
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+2. Enable and start the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable ln-ashlar-mcp
+sudo systemctl start ln-ashlar-mcp
 ```
 
 The server listens on `0.0.0.0:<PORT>` (default `8080`).
@@ -126,7 +169,7 @@ Four independent checks — each covering aspects the other three do not:
 
 ```bash
 npm test                                                    # 1. behavior
-npm run sync:ln-attrs -- --check --root=/path/to/ln-ashlar   # 2. drift
+npm run sync:ln-attrs -- --check --root=/home/mcp/ln-ashlar   # 2. drift
 npm run lint:snippets                                       # 3. ghost attributes + ATTR.*
 npm run smoke:generators                                    # 4. contract template↔builder
 ```
