@@ -387,7 +387,11 @@ export function buildTable({
 		const bits = [escapeHtml(col.label)];
 
 		if (col.sortable) {
-			bits.push(sortButton(col.label));
+			if (dataDriven) {
+				bits.push(buildSortControl({ target: queryTarget, fields: [{ field: col.field, label: col.label }] }));
+			} else {
+				bits.push(sortButton(col.label));
+			}
 		}
 
 		if (col.filterable) {
@@ -534,9 +538,9 @@ export function buildSortControl({ target, fields = [], id }) {
 			const fieldAttr = f.field ? ` ${attr(ATTR.sortField, f.field)}` : "";
 			return (
 				`<ul${attr("id", id)}${attr(ATTR.sort, target)}${fieldAttr} ${attr(ATTR.sortState, "none")}>\n` +
-				`  <li><button type="button" ${attr(ATTR.sortDir, "asc")} aria-label="Sort ${escapeHtml(f.label)} ascending"><svg class="ln-icon" aria-hidden="true"><use href="#ln-arrows-sort"></use></svg></button></li>\n` +
-				`  <li><button type="button" ${attr(ATTR.sortDir, "desc")} aria-label="Sort ${escapeHtml(f.label)} descending"><svg class="ln-icon" aria-hidden="true"><use href="#ln-arrow-up"></use></svg></button></li>\n` +
-				`  <li><button type="button" ${attr(ATTR.sortDir, "none")} aria-label="Remove sort for ${escapeHtml(f.label)}"><svg class="ln-icon" aria-hidden="true"><use href="#ln-arrow-down"></use></svg></button></li>\n` +
+				`  <li><button type="button" ${attr(ATTR.sortDir, "asc")} aria-label="Sort ${escapeHtml(f.label)} ascending"><svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-arrows-sort"></use></svg></button></li>\n` +
+				`  <li><button type="button" ${attr(ATTR.sortDir, "desc")} aria-label="Sort ${escapeHtml(f.label)} descending"><svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-arrow-up"></use></svg></button></li>\n` +
+				`  <li><button type="button" ${attr(ATTR.sortDir, "none")} aria-label="Remove sort for ${escapeHtml(f.label)}"><svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-arrow-down"></use></svg></button></li>\n` +
 				`</ul>`
 			);
 		})

@@ -247,49 +247,56 @@ function validateRoot(rootPath, rootIndex) {
 
     const topLevelSections = parsed.sections.filter((s) => s.level === 2);
 
-    if (f.folder === 'components' && fm.classification !== 'service') {
+    if (f.folder === 'components') {
       const numbers = topLevelSections.map((s) => s.number);
-      const is7 = numbers.length === 7 && numbers.every((n, i) => n === i + 1);
-      const sec4 = topLevelSections.find((s) => s.number === 4);
-      const is8WithState =
-        numbers.length === 8 &&
-        numbers.every((n, i) => n === i + 1) &&
-        sec4 &&
-        sec4.rawTitle === '4. State & Persistence';
-
-      if (!is7 && !is8WithState) {
+      const isAscendingUnique = numbers.every((n, i) => n !== null && (i === 0 || n > numbers[i - 1]));
+      if (!isAscendingUnique) {
         problems.push(
-          `Expected exactly 7 top-level "## N." sections numbered 1..7 (or 8 with "4. State & Persistence"), found: [${numbers.join(', ')}]`
+          `Top-level "## N." sections must have unique, ascending numbers 1..N, found: [${numbers.join(', ')}]`
         );
       }
 
-      const sec2 = topLevelSections.find((s) => s.number === 2);
-      if (sec2 && sec2.rawTitle !== '2. Minimal HTML Markup & Usage Variants') {
-        problems.push(`Section 2 heading must be exactly "2. Minimal HTML Markup & Usage Variants", found "${sec2.rawTitle}"`);
-      }
+      if (fm.classification !== 'service') {
+        const is7 = numbers.length === 7 && numbers.every((n, i) => n === i + 1);
+        const sec4 = topLevelSections.find((s) => s.number === 4);
+        const is8WithState =
+          numbers.length === 8 &&
+          numbers.every((n, i) => n === i + 1) &&
+          sec4 &&
+          sec4.rawTitle === '4. State & Persistence';
 
-      const sec3 = topLevelSections.find((s) => s.number === 3);
-      if (sec3 && sec3.rawTitle !== '3. Declarative API Contract (Attributes & Events)') {
-        problems.push(`Section 3 heading must be exactly "3. Declarative API Contract (Attributes & Events)", found "${sec3.rawTitle}"`);
-      }
+        if (!is7 && !is8WithState) {
+          problems.push(
+            `Expected exactly 7 top-level "## N." sections numbered 1..7 (or 8 with "4. State & Persistence"), found: [${numbers.join(', ')}]`
+          );
+        }
 
-      if (fm.classification === 'simple' || fm.classification === 'coordinator') {
+        const sec2 = topLevelSections.find((s) => s.number === 2);
+        if (sec2 && sec2.rawTitle !== '2. Minimal HTML Markup & Usage Variants') {
+          problems.push(`Section 2 heading must be exactly "2. Minimal HTML Markup & Usage Variants", found "${sec2.rawTitle}"`);
+        }
+
+        const sec3 = topLevelSections.find((s) => s.number === 3);
+        if (sec3 && sec3.rawTitle !== '3. Declarative API Contract (Attributes & Events)') {
+          problems.push(`Section 3 heading must be exactly "3. Declarative API Contract (Attributes & Events)", found "${sec3.rawTitle}"`);
+        }
+
         const hasAttrTable = parsed.sections.some((s) => s.title === 'Attributes Table');
         const hasEventsApi = parsed.sections.some((s) => s.title === 'Events API');
         if (!hasAttrTable || !hasEventsApi) {
           problems.push("Section 3 must contain both '### Attributes Table' and '### Events API' (simple/coordinator).");
         }
-      }
 
-      checkTableColumns(parsed.sections, 'Attributes Table', ATTRIBUTE_COLUMNS, problems, true);
-      checkTableColumns(parsed.sections, 'Events API', EVENTS_COLUMNS, problems, true);
+        checkTableColumns(parsed.sections, 'Attributes Table', ATTRIBUTE_COLUMNS, problems, true);
+        checkTableColumns(parsed.sections, 'Events API', EVENTS_COLUMNS, problems, true);
 
-      if (sec2 && (fm.classification === 'simple' || fm.classification === 'coordinator')) {
-        const hasHtml =
-          Boolean(parsed.markup.base && parsed.markup.base.lang === 'html') ||
-          parsed.markup.variants.some((v) => v.lang === 'html' && v.code);
-        if (!hasHtml) {
-          problems.push(`Section 2 must contain at least one \`\`\`html block (required for classification ${fm.classification})`);
+        if (sec2) {
+          const hasHtml =
+            Boolean(parsed.markup.base && parsed.markup.base.lang === 'html') ||
+            parsed.markup.variants.some((v) => v.lang === 'html' && v.code);
+          if (!hasHtml) {
+            problems.push(`Section 2 must contain at least one \`\`\`html block (required for classification ${fm.classification})`);
+          }
         }
       }
     } else if (f.folder === 'css') {

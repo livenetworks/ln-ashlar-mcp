@@ -121,7 +121,23 @@ function splitTableRow(line) {
   let t = line.trim();
   if (t.startsWith('|')) t = t.slice(1);
   if (t.endsWith('|')) t = t.slice(0, -1);
-  return t.split('|').map((cell) => stripOuterBackticks(cell));
+
+  const cells = [];
+  let current = '';
+  for (let i = 0; i < t.length; i++) {
+    const char = t[i];
+    if (char === '\\' && i + 1 < t.length && t[i + 1] === '|') {
+      current += '|';
+      i++;
+    } else if (char === '|') {
+      cells.push(stripOuterBackticks(current));
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  cells.push(stripOuterBackticks(current));
+  return cells;
 }
 
 /**

@@ -124,7 +124,7 @@ async function main() {
 				text += "\n" + (extraDown?.content?.[0]?.text || "") + "\n" + (extraNeutral?.content?.[0]?.text || "");
 			}
 
-			for (const m of text.matchAll(/#lnc?-([a-z0-9-]+)/g)) {
+			for (const m of text.matchAll(/#ln(?:c|-icon)?-([a-z0-9-]+)/g)) {
 				if (!KNOWN_ICONS.has(m[1])) {
 					failures.push(`${g}: непозната икона "#ln-${m[1]}" — ако е нова, додај ја во KNOWN_ICONS по проверка на tabler.io/icons`);
 				}
