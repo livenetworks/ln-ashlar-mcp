@@ -288,7 +288,22 @@ app.all(['/', '/mcp'], async (req, res) => {
 
     let transport;
 
-    if (sessionId && transports[sessionId]) {
+    const isInit = req.method === 'POST' && (isInitializeRequest(req.body) || req.body?.method === 'initialize');
+
+    if (sessionId && !isInit) {
+      if (!transports[sessionId]) {
+        // Per MCP Streamable HTTP spec: invalid/expired session IDs MUST return 404
+        // so the client knows to re-initialize automatically instead of failing permanently.
+        return res.status(404).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32001,
+            message: 'Session not found or expired. Please re-initialize.'
+          },
+          id: null
+        });
+      }
+
       const owner = sessionUsers[sessionId];
       if (owner && owner !== req.authUser) {
         return forbiddenSessionOwner(res);
@@ -307,7 +322,7 @@ app.all(['/', '/mcp'], async (req, res) => {
           id: null
         });
       }
-    } else if (!sessionId && req.method === 'POST' && (isInitializeRequest(req.body) || req.body?.method === 'initialize')) {
+    } else if (isInit) {
       const initiatingUser = req.authUser;
       const clientInfo = req.body?.params?.clientInfo;
       transport = new StreamableHTTPServerTransport({
