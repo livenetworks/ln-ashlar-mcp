@@ -3,6 +3,7 @@ logs/
 config/auth.json
 config/jwt.json
 config/gemini.json
+config/claude.json
 resources/
 .claude
 

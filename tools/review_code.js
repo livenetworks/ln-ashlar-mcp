@@ -1,10 +1,10 @@
 import { z } from "zod";
 import winston from "winston";
 import "winston-daily-rotate-file";
-import { loadGeminiConfig, runGemini } from "../lib/gemini.js";
+import { runReview, detectReviewerEngine, loadReviewConfig } from "../lib/review-runner.js";
 import { buildCodeReviewPrompt, extractVerdict } from "../lib/gemini-prompts.js";
 
-// Winston logger for review_code operations (Gemini cross-review calls)
+// Winston logger for review_code operations
 const logger = winston.createLogger({
 	level: "info",
 	format: winston.format.combine(
@@ -48,7 +48,7 @@ export const definition = {
 	title: "Review Code",
 	description:
 		"MANDATORY before finalizing or committing code changes. Submit a code diff or patch to an " +
-		"independent reviewer for critique on correctness, plan conformance, and cleanup. " +
+		"independent reviewer for critique on correctness, plan conformance, and cleanup (Claude or Gemini/Antigravity). " +
 		"Stateless — YOU drive the loop. " +
 		"Protocol: (1) call with your `diff` and optional `context` (the architecture/implementation plan or task requirements); " +
 		"(2) read the returned critique (a Verdict of APPROVE or REVISE, plus categorized issues under correctness, conformance, cleanup); " +
@@ -63,6 +63,14 @@ export const definition = {
 		context: z.string().optional().describe("Task requirements, architecture plan, or acceptance criteria to judge conformance against"),
 		previous_feedback: z.string().optional().describe("The critique received on the previous iteration, when revising"),
 		iteration: z.number().int().min(1).optional().describe("Current iteration number; server rejects values above the configured max (default 3)"),
+		reviewer: z
+			.enum(["claude", "gemini", "auto"])
+			.optional()
+			.describe("Reviewer AI engine to use ('claude', 'gemini', or 'auto' for complementary crossover review). Default: 'auto'"),
+		caller: z
+			.string()
+			.optional()
+			.describe("Identifier of calling agent (e.g. 'claude', 'antigravity') if manual caller override is desired"),
 		wrap_up: z
 			.boolean()
 			.optional()
@@ -71,9 +79,17 @@ export const definition = {
 };
 
 export const handler = async (args, extra) => {
-	const { diff, context, previous_feedback, iteration, wrap_up } = args;
-	const cfg = loadGeminiConfig();
+	const { diff, context, previous_feedback, iteration, wrap_up, reviewer, caller } = args;
 	const apiKeyId = extra?.authInfo?.clientId ?? "unknown";
+
+	const resolvedEngine = detectReviewerEngine({
+		reviewer,
+		caller,
+		clientInfo: extra?.clientInfo,
+		authInfo: extra?.authInfo,
+		authUser: extra?.authUser
+	});
+	const cfg = loadReviewConfig(resolvedEngine);
 
 	const currentIteration = iteration ?? 1;
 
@@ -91,11 +107,17 @@ export const handler = async (args, extra) => {
 	const start = Date.now();
 
 	try {
-		const { text } = await runGemini(prompt, { config: cfg });
+		const { text, engine, model } = await runReview(prompt, {
+			engine: resolvedEngine,
+			caller,
+			extra,
+			config: cfg
+		});
 		const durationMs = Date.now() - start;
 		const verdict = extractVerdict(text);
 		logger.info({
 			event: "review_code",
+			engine,
 			apiKeyId,
 			iteration,
 			wrap_up: !!wrap_up,
@@ -103,16 +125,17 @@ export const handler = async (args, extra) => {
 			charsOut: text.length,
 			durationMs,
 			verdict,
-			model: cfg.model
+			model
 		});
 		if (cfg.auditLog) {
 			auditLogger.info({
 				event: "review_audit",
+				engine,
 				apiKeyId,
 				type: "code",
 				iteration,
 				wrap_up: !!wrap_up,
-				model: cfg.model,
+				model,
 				durationMs,
 				prompt,
 				response: text
@@ -123,6 +146,7 @@ export const handler = async (args, extra) => {
 		const durationMs = Date.now() - start;
 		logger.warn({
 			event: "review_code_failed",
+			engine: resolvedEngine,
 			apiKeyId,
 			iteration,
 			wrap_up: !!wrap_up,
@@ -135,6 +159,7 @@ export const handler = async (args, extra) => {
 		if (cfg.auditLog) {
 			auditLogger.info({
 				event: "review_audit",
+				engine: resolvedEngine,
 				apiKeyId,
 				type: "code",
 				iteration,

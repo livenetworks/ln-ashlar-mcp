@@ -180,7 +180,16 @@ const createMcpServer = async () => {
 
   // Register all pre-loaded tools dynamically
   for (const tool of registeredTools) {
-    server.registerTool(tool.name, tool.definition, tool.handler);
+    server.registerTool(tool.name, tool.definition, (args, extra) => {
+      const clientInfo = server.server.getClientVersion();
+      const sid = extra?.sessionId;
+      const enrichedExtra = {
+        ...extra,
+        clientInfo: clientInfo || (sid ? sessionClients[sid] : undefined),
+        authUser: sid ? sessionUsers[sid] : extra?.authUser
+      };
+      return tool.handler(args, enrichedExtra);
+    });
   }
 
   // Register ping tool
@@ -212,9 +221,10 @@ const createMcpServer = async () => {
 
 app.use('/knowledge', knowledgeRouter);
 
-// Session storage for active transports, and the username each session belongs to
+// Session storage for active transports, usernames, and client info
 const transports = {};
 const sessionUsers = {}; // sessionId -> username
+const sessionClients = {}; // sessionId -> clientInfo
 
 const forbiddenSessionOwner = (res) => res.status(403).json({
   jsonrpc: '2.0',
@@ -254,12 +264,16 @@ app.all(['/', '/mcp'], async (req, res) => {
       }
     } else if (!sessionId && req.method === 'POST' && isInitializeRequest(req.body)) {
       const initiatingUser = req.authUser;
+      const clientInfo = req.body?.params?.clientInfo;
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (sid) => {
           console.log(`StreamableHTTP session initialized: ${sid}`);
           transports[sid] = transport;
           sessionUsers[sid] = initiatingUser;
+          if (clientInfo) {
+            sessionClients[sid] = clientInfo;
+          }
         }
       });
       transport.onclose = () => {
@@ -268,6 +282,7 @@ app.all(['/', '/mcp'], async (req, res) => {
           console.log(`Transport closed for session ${sid}, removing from transports map`);
           delete transports[sid];
           delete sessionUsers[sid];
+          delete sessionClients[sid];
         }
       };
       const serverInstance = await createMcpServer();
@@ -307,10 +322,15 @@ app.get('/sse', async (req, res) => {
   const transport = new SSEServerTransport('/messages', res);
   transports[transport.sessionId] = transport;
   sessionUsers[transport.sessionId] = req.authUser;
+  const userAgent = req.headers['user-agent'];
+  if (userAgent) {
+    sessionClients[transport.sessionId] = { name: userAgent };
+  }
   res.on('close', () => {
     console.log(`SSE connection closed for session ${transport.sessionId}`);
     delete transports[transport.sessionId];
     delete sessionUsers[transport.sessionId];
+    delete sessionClients[transport.sessionId];
   });
   const serverInstance = await createMcpServer();
   await serverInstance.connect(transport);

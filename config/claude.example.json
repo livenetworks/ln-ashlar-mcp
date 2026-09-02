@@ -1,0 +1,11 @@
+{
+	"model": "sonnet",
+	"timeoutMs": 240000,
+	"concurrency": 2,
+	"maxIterations": 3,
+	"claudeBin": "claude",
+	"claudeHome": "/home/mcp",
+	"claudeCwd": "/tmp",
+	"maxOutputBytes": 1048576,
+	"auditLog": true
+}

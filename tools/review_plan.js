@@ -1,10 +1,10 @@
 import { z } from "zod";
 import winston from "winston";
 import "winston-daily-rotate-file";
-import { loadGeminiConfig, runGemini } from "../lib/gemini.js";
+import { runReview, detectReviewerEngine, loadReviewConfig } from "../lib/review-runner.js";
 import { buildReviewPrompt, extractVerdict } from "../lib/gemini-prompts.js";
 
-// Winston logger for review_plan operations (Gemini cross-review calls)
+// Winston logger for review_plan operations
 const logger = winston.createLogger({
 	level: "info",
 	format: winston.format.combine(
@@ -49,7 +49,7 @@ export const definition = {
 	description:
 		"MANDATORY before any implementation begins. Any plan that will be executed MUST be submitted here first. " +
 		"Submit a plan (architecture spec OR implementation/executor plan) to an " +
-		"independent reviewer for critique. " +
+		"independent reviewer for critique (Claude or Gemini/Antigravity). " +
 		"Stateless — YOU drive the loop. " +
 		"Protocol: (1) call with your `plan` and `plan_type`; (2) read the returned " +
 		"critique (a Verdict of APPROVE or REVISE, plus numbered issues); (3) if " +
@@ -71,6 +71,14 @@ export const definition = {
 		context: z.string().optional().describe("Project background/constraints for the reviewer to judge against"),
 		previous_feedback: z.string().optional().describe("The critique received on the previous iteration, when revising"),
 		iteration: z.number().int().min(1).optional().describe("Current iteration number; server rejects values above the configured max (default 3)"),
+		reviewer: z
+			.enum(["claude", "gemini", "auto"])
+			.optional()
+			.describe("Reviewer AI engine to use ('claude', 'gemini', or 'auto' for complementary crossover review). Default: 'auto'"),
+		caller: z
+			.string()
+			.optional()
+			.describe("Identifier of calling agent (e.g. 'claude', 'antigravity') if manual caller override is desired"),
 		wrap_up: z
 			.boolean()
 			.optional()
@@ -79,13 +87,19 @@ export const definition = {
 };
 
 export const handler = async (args, extra) => {
-	const { plan, plan_type, context, previous_feedback, iteration, wrap_up } = args;
-	const cfg = loadGeminiConfig();
+	const { plan, plan_type, context, previous_feedback, iteration, wrap_up, reviewer, caller } = args;
 	const planType = plan_type || "generic";
 	const apiKeyId = extra?.authInfo?.clientId ?? "unknown";
 
-	// `iteration` е optional во схемата, а `undefined > 3` е false — без овој
-	// default клиент што полето го изоставува го заобиколуваше лимитот целосно.
+	const resolvedEngine = detectReviewerEngine({
+		reviewer,
+		caller,
+		clientInfo: extra?.clientInfo,
+		authInfo: extra?.authInfo,
+		authUser: extra?.authUser
+	});
+	const cfg = loadReviewConfig(resolvedEngine);
+
 	const currentIteration = iteration ?? 1;
 
 	if (!wrap_up && currentIteration > cfg.maxIterations) {
@@ -102,11 +116,17 @@ export const handler = async (args, extra) => {
 	const start = Date.now();
 
 	try {
-		const { text } = await runGemini(prompt, { config: cfg });
+		const { text, engine, model } = await runReview(prompt, {
+			engine: resolvedEngine,
+			caller,
+			extra,
+			config: cfg
+		});
 		const durationMs = Date.now() - start;
 		const verdict = extractVerdict(text);
 		logger.info({
 			event: "review_plan",
+			engine,
 			apiKeyId,
 			plan_type: planType,
 			iteration,
@@ -115,16 +135,17 @@ export const handler = async (args, extra) => {
 			charsOut: text.length,
 			durationMs,
 			verdict,
-			model: cfg.model
+			model
 		});
 		if (cfg.auditLog) {
 			auditLogger.info({
 				event: "review_audit",
+				engine,
 				apiKeyId,
 				plan_type: planType,
 				iteration,
 				wrap_up: !!wrap_up,
-				model: cfg.model,
+				model,
 				durationMs,
 				prompt,
 				response: text
@@ -135,6 +156,7 @@ export const handler = async (args, extra) => {
 		const durationMs = Date.now() - start;
 		logger.warn({
 			event: "review_plan_failed",
+			engine: resolvedEngine,
 			apiKeyId,
 			plan_type: planType,
 			iteration,
@@ -148,6 +170,7 @@ export const handler = async (args, extra) => {
 		if (cfg.auditLog) {
 			auditLogger.info({
 				event: "review_audit",
+				engine: resolvedEngine,
 				apiKeyId,
 				plan_type: planType,
 				iteration,
