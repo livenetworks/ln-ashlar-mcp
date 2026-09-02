@@ -41,13 +41,21 @@ export const handler = async ({ event, domain }) => {
   const renderList = (rows) =>
     rows.length ? rows.map((m) => `- **${m.doc}** (${m.domain}) — ${m.description ?? ""}`).join("\n") : "(none)";
 
-  const text = [
+  const lines = [
     `Event \`${key}\`:`,
     "",
     `Emits:\n${renderList(emitters)}`,
     "",
     `Listens:\n${renderList(listeners)}`
-  ].join("\n");
+  ];
 
-  return { content: [{ type: "text", text }] };
+  if (emitters.length === 0 && (key.includes(":request-") || key.includes(":req-"))) {
+    lines.push(
+      "",
+      "> [!NOTE]",
+      "> No declarative HTML emitter in core. This intake event is triggered via `dispatchEvent` in JavaScript coordinators, programmatic calls, or view action bridges (e.g. `<button data-ln-table-row-action=\"delete\">`)."
+    );
+  }
+
+  return { content: [{ type: "text", text: lines.join("\n") }] };
 };

@@ -39,11 +39,18 @@ lnFakeService.init({ debug: true });
 | --- | --- | --- | --- | --- |
 | `data-ln-fake-service` | `div` | `boolean` | `false` | Activates the fake service component |
 
+### Programmatic JS API
+
+| Method | Parameters | Return | Description |
+| --- | --- | --- | --- |
+| `init` | `(options)` | `Object` | Initializes fake service |
+
 ### Events API
 
 | Event | Direction | Cancelable | Description | `detail` Object |
 | --- | --- | --- | --- | --- |
 | `ln:fake-service:ready` | Emits | No | Emitted when the service is ready | `{}` |
+| `ln:fake:request-action` | Listens | No | Intake event for fake action | `{}` |
 
 ## 4. CSS Styling & Behavioral Concept
 

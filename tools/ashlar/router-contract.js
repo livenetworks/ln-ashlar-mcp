@@ -35,3 +35,4 @@ generate_ln_* tool, select the component from the routing matrix below.
 
 /** Го рестатира договорот на описите на алатките што претходат на markup излез. */
 export const ROUTER_FIRST_HINT = '';
+

@@ -23,7 +23,10 @@ const REPO1_NAMES = [
   "ln-fake",
   "ln-fake-service",
   "ln-nohtml",
-  "ln-other"
+  "ln-other",
+  "ln-patho-4col",
+  "ln-patho-direct",
+  "ln-patho-mixed"
 ].sort();
 
 describe("buildIndex — single root (README + _draft ignored, ln-stub excluded for missing frontmatter)", () => {
@@ -35,8 +38,8 @@ describe("buildIndex — single root (README + _draft ignored, ln-stub excluded 
     assert.equal(index.roots[0].signature, null);
   });
 
-  test("registry has exactly the 14 real docs of root 1 (skills/root-skill.md and skills/mobile/whatever.md are skipped)", () => {
-    assert.equal(index.registry.length, 14);
+  test("registry has exactly the 17 real docs of root 1 (skills/root-skill.md and skills/mobile/whatever.md are skipped)", () => {
+    assert.equal(index.registry.length, 17);
     const names = index.registry.map((d) => d.name).sort();
     assert.deepEqual(names, REPO1_NAMES);
   });
@@ -119,6 +122,24 @@ describe("buildIndex — single root (README + _draft ignored, ln-stub excluded 
     const planned = css.outgoing.find((n) => n.planned);
     assert.ok(planned);
     assert.equal(planned.name, "not-written-yet");
+  });
+
+  test("pathological fixture: ln-patho-mixed cleanly separates attributes and events from mixed table", () => {
+    assert.ok(index.attributeIndex.has("data-ln-patho-type"));
+    assert.ok(!index.attributeIndex.has("ln-patho:request-data"));
+    assert.ok(!index.attributeIndex.has("ln-patho:rendered"));
+    assert.ok(index.eventIndex.has("ln-patho:request-data"));
+    assert.ok(index.eventIndex.has("ln-patho:rendered"));
+  });
+
+  test("pathological fixture: ln-patho-4col extracts 4-column attribute table", () => {
+    assert.ok(index.attributeIndex.has("data-ln-patho-4col"));
+    assert.ok(index.eventIndex.has("ln-patho:4col-ready"));
+  });
+
+  test("pathological fixture: ln-patho-direct extracts from direct Section 3 tables", () => {
+    assert.ok(index.attributeIndex.has("data-ln-patho-direct"));
+    assert.ok(index.eventIndex.has("ln-patho:direct-event"));
   });
 
   test("fuse search finds a section by a word from its body", () => {

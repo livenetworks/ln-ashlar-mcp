@@ -1,16 +1,21 @@
-// tools/snippets/mcp.js
-//
-// Единствената точка каде HTML се обвиткува во MCP одговор.
-//
-// Порано секој генератор си го градеше fence-от сам, а generate_ln_crud_module
-// го вадеше назад со regex за да компонира. Сега компонирањето оди преку
-// builders.js (чист HTML), а fence-от се додава само тука — на самата граница.
+import { KNOWN_LN_ATTRS } from "./attributes.generated.js";
+
+const ATTR_RE = /data-ln-[a-z0-9-]+/g;
 
 /**
  * @param {string} html
  * @returns {{content: {type: "text", text: string}[]}}
  */
 export function htmlResult(html) {
+	if (process.env.NODE_ENV !== "production") {
+		const matches = html.match(ATTR_RE) || [];
+		for (const attr of matches) {
+			if (!KNOWN_LN_ATTRS.has(attr)) {
+				console.warn(`[SNIPPET WARNING] Emitted unindexed/non-canonical attribute: "${attr}"`);
+			}
+		}
+	}
+
 	return {
 		content: [
 			{
@@ -20,3 +25,4 @@ export function htmlResult(html) {
 		]
 	};
 }
+

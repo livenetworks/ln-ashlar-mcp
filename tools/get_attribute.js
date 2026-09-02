@@ -31,6 +31,19 @@ export const handler = async ({ attribute, domain }) => {
   if (domain) matches = matches.filter((m) => m.domain === domain);
 
   if (matches.length === 0) {
+    if (index.validAttributes && index.validAttributes.has(key)) {
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              `Attribute \`${key}\` exists in ln-ashlar library runtime (verified allowlist), but is not yet indexed in the documentation contract.\n\n` +
+              `> [!NOTE]\n> Treat \`${key}\` as a valid runtime attribute. Verify configuration against component source code.`
+          }
+        ]
+      };
+    }
+
     const suggestions = closest(key, Array.from(index.attributeIndex.keys()));
     const suffix = suggestions.length ? ` Closest matches: ${suggestions.join(", ")}` : "";
     return { content: [{ type: "text", text: `Not found: "${attribute}".${suffix}` }] };
@@ -39,11 +52,11 @@ export const handler = async ({ attribute, domain }) => {
   const lines = [
     `Attribute \`${key}\` — ${matches.length} declaration(s):`,
     "",
-    "| Component | Domain | Element | Type / Values | Default | Description |",
+    "| Component | Status | Element | Type / Values | Default | Description |",
     "| --- | --- | --- | --- | --- | --- |",
     ...matches.map(
       (m) =>
-        `| ${m.component} | ${m.domain} | ${m.element ?? ""} | ${m.typeValues ?? ""} | ${m.default ?? ""} | ${m.description ?? ""} |`
+        `| ${m.component} | ${m.status ?? "stable"} | ${m.element ?? ""} | ${m.typeValues ?? ""} | ${m.default ?? ""} | ${m.description ?? ""} |`
     )
   ];
 

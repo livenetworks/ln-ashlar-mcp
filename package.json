@@ -9,7 +9,9 @@
     "lint:docs": "node tools/ashlar/lint-cli.js",
     "lint:snippets": "node scripts/lint-snippets.js",
     "smoke:generators": "node scripts/smoke-generators.js",
-    "sync:ln-attrs": "node scripts/sync-ln-attrs.js"
+    "sync:ln-attrs": "node scripts/sync-ln-attrs.js",
+    "audit:coverage": "node scripts/audit-coverage.js",
+    "audit": "node scripts/audit-coverage.js"
   },
   "keywords": [],
   "author": "",

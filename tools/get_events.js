@@ -59,5 +59,5 @@ export const handler = async ({ name: docName, domain }) => {
   sections.push(`Emits (${emits.length}):\n${emits.length ? `${header}\n${renderRows(emits)}` : "(none)"}`);
   sections.push(`Listens (${listens.length}):\n${listens.length ? `${header}\n${renderRows(listens)}` : "(none)"}`);
 
-  return { content: [{ type: "text", text: `Events for "${docName}":\n\n${sections.join("\n\n")}` }] };
+  return { content: [{ type: "text", text: `Events for "${docName}" (status: ${resolved.doc.status ?? "stable"}):\n\n${sections.join("\n\n")}` }] };
 };

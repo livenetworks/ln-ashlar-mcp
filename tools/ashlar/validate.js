@@ -12,7 +12,7 @@ const NON_SKILL_FOLDERS = ['components', 'css', 'patterns', 'guides', 'doctrine'
 const SKILL_CONTEXTS = ['app', 'web', 'wordpress'];
 
 const VALID_CLASSIFICATIONS = ['simple', 'coordinator', 'service', 'css', 'pattern', 'guide', 'doctrine', 'skill'];
-const VALID_STATUSES = ['draft', 'stable'];
+const VALID_STATUSES = ['draft', 'stable', 'active'];
 const VALID_DOMAINS = ['frontend', 'backend', 'process'];
 const VALID_DIRECTIONS = ['Emits', 'Listens'];
 const VALID_KINDS = ['mixin', 'class', 'token', 'attribute'];
@@ -350,6 +350,24 @@ function validateRoot(rootPath, rootIndex) {
     for (const s of parsed.scssApi) {
       if (s.kind && !VALID_KINDS.includes(s.kind)) {
         problems.push(`SCSS API entry "${s.name}" has invalid Kind "${s.kind}"; expected one of ${VALID_KINDS.join('|')}`);
+      }
+    }
+
+    if (parsed.warnings && parsed.warnings.some((w) => w.startsWith('unbalancedFence'))) {
+      problems.push('Document contains an unclosed or unbalanced fenced code block');
+    }
+
+    const sec7 = parsed.sections.find((s) => s.number === 7 || s.title.toLowerCase().includes('related components'));
+    if (sec7 && sec7.content) {
+      const sec7Lines = sec7.content.split('\n');
+      for (const line of sec7Lines) {
+        const listenMatch = line.match(/listens to ([a-z0-9:_\-\s]+)/i);
+        if (listenMatch) {
+          const claim = listenMatch[1].toLowerCase().trim();
+          if (claim.includes('router navigation') && !parsed.events.some((e) => e.direction === 'Listens' && e.event.includes('router'))) {
+            problems.push(`Section 7 prose claims component "listens to router navigation", but no Listens event is declared in Events API (state real mechanism instead).`);
+          }
+        }
       }
     }
 

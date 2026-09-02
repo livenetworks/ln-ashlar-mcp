@@ -261,17 +261,32 @@ describe("parseDoc — table extraction (English contract, subheading-located)",
   });
 
   test("Events header cell keeps its backticks: '`detail` Object'", () => {
-    const md = [
-      "## 3. Declarative API Contract (Attributes & Events)",
-      "",
-      "### Events API",
-      "",
+    const lines = [
       "| Event | Direction | Cancelable | Description | `detail` Object |",
       "| --- | --- | --- | --- | --- |",
       "| `ln:x:y` | Emits | No | . | `{}` |"
-    ].join("\n");
-    const { columns } = parseTable(md.split("\n").slice(4));
+    ];
+    const { columns } = parseTable(lines);
     assert.equal(columns[4], "`detail` Object");
+  });
+
+  test("mixed table directly under §3 routes attributes and events by shape", () => {
+    const md = [
+      "## 3. Contract",
+      "",
+      "| Surface | Values / payload | Meaning |",
+      "|---|---|---|",
+      "| `data-ln-chart-type` | `line`, `area` | Type renderer |",
+      "| `ln-chart:request-data` | `{chart}` | Renderer asks for records |",
+      "| `ln-chart:rendered` | `{count}` | Notification |"
+    ].join("\n");
+
+    const { attributes, events } = parseDoc(md);
+    assert.equal(attributes.length, 1);
+    assert.equal(attributes[0].attribute, "data-ln-chart-type");
+    assert.equal(events.length, 2);
+    assert.equal(events[0].event, "ln-chart:request-data");
+    assert.equal(events[1].event, "ln-chart:rendered");
   });
 });
 

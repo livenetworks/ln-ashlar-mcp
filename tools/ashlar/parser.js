@@ -1,11 +1,7 @@
 // tools/ashlar/parser.js
 // Pure markdown documentation parser for the ln-ashlar docs-mcp corpus.
 // No filesystem access here — parseDoc() takes markdown text and returns
-// structured data (sections, attribute/event tables, markup blocks, links).
-//
-// Contract (English, 2026-07-11 decision): all normative headings/tables are
-// authored in English. See <root>/docs-mcp/README.md + _templates/*.md in any
-// configured corpus root — those templates are authoritative.
+// structured data (sections, attribute/event tables, markup blocks, links, warnings).
 
 import { parseFrontmatter } from './frontmatter.js';
 
@@ -33,21 +29,60 @@ function stripOuterBackticks(value) {
 }
 
 /**
+ * Normalize a title string for tolerant comparison:
+ * - strips leading numeric prefixes (e.g. "3. ", "N. ")
+ * - strips emoji / decorative unicode symbols
+ * - strips markdown formatting (backticks, bold, italics)
+ * - trims and lowercases
+ * @param {string} title
+ * @returns {string}
+ */
+function normalizeTitle(title) {
+  if (!title) return '';
+  return title
+    .replace(/^\d+\.\s*/, '')
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[`*_~]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+/**
  * Scan lines and record all ATX `##`/`###` headings that are outside fenced
- * code blocks, tracking ``` fences as we go.
+ * code blocks, tracking ``` / ~~~ fences and their lengths as we go.
  * @param {string[]} lines
+ * @param {string[]} [warnings]
  * @returns {Array<{level:number, number:number|null, title:string, rawTitle:string, lineIndex:number}>}
  */
-function computeHeadings(lines) {
+function computeHeadings(lines, warnings = []) {
   const headings = [];
   let inFence = false;
+  let fenceChar = '';
+  let fenceLen = 0;
+
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (/^```/.test(trimmed)) {
-      inFence = !inFence;
-      continue;
+    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
+
+    if (fenceMatch) {
+      const char = fenceMatch[1][0];
+      const len = fenceMatch[1].length;
+
+      if (!inFence) {
+        inFence = true;
+        fenceChar = char;
+        fenceLen = len;
+        continue;
+      } else if (char === fenceChar && len >= fenceLen) {
+        inFence = false;
+        fenceChar = '';
+        fenceLen = 0;
+        continue;
+      }
     }
+
     if (inFence) continue;
+
     const m = lines[i].match(/^(#{2,3})\s+(.*)$/);
     if (!m) continue;
     const level = m[1].length;
@@ -57,6 +92,11 @@ function computeHeadings(lines) {
     const title = numMatch ? numMatch[2].trim() : rawTitle;
     headings.push({ level, number, title, rawTitle, lineIndex: i });
   }
+
+  if (inFence) {
+    warnings.push('unbalancedFence: document contains unclosed fenced code block');
+  }
+
   return headings;
 }
 
@@ -78,58 +118,68 @@ function sectionEnd(headings, idx, lines) {
 }
 
 /**
- * Build the flat sections array (one entry per heading, both `##` and `###`).
+ * Build a flat array of section descriptors for all `##` and `###` headings.
  * @param {string[]} lines
  * @param {Array} headings
- * @returns {Array}
+ * @returns {Array<{level:number, number:number|null, title:string, rawTitle:string, lineIndex:number, content:string}>}
  */
 function buildSections(lines, headings) {
-  return headings.map((h, idx) => {
-    const end = sectionEnd(headings, idx, lines);
-    const text = lines.slice(h.lineIndex + 1, end).join('\n').trim();
-    return {
+  const sections = [];
+  for (let i = 0; i < headings.length; i++) {
+    const h = headings[i];
+    const start = h.lineIndex + 1;
+    const end = sectionEnd(headings, i, lines);
+    const content = lines.slice(start, end).join('\n').trim();
+    sections.push({
       level: h.level,
       number: h.number,
       title: h.title,
       rawTitle: h.rawTitle,
-      startLine: h.lineIndex + 1,
-      text
-    };
-  });
+      lineIndex: h.lineIndex,
+      text: content,
+      content
+    });
+  }
+  return sections;
 }
 
 /**
- * True if a trimmed line looks like a GFM table separator row (e.g. `| --- | --- |`).
+ * Check if a line is a GFM table separator row (`| --- | :---: |`).
  * @param {string} line
  * @returns {boolean}
  */
 function isSeparatorRow(line) {
-  const t = line.trim();
-  if (!t.includes('-')) return false;
-  return /^[|\s:-]+$/.test(t);
+  const trimmed = line.trim();
+  if (!trimmed.startsWith('|')) return false;
+  const inner = trimmed.slice(1, trimmed.endsWith('|') ? -1 : undefined);
+  const cells = inner.split('|');
+  if (cells.length === 0) return false;
+  return cells.every((c) => /^[\s:-]+$/.test(c) && c.includes('-'));
 }
 
 /**
- * Split a raw table row line into trimmed cell strings (outer pipes removed).
- * Only a whole-cell-wrapping outer pair of backticks is stripped here — a
- * cell like `` `detail` Object `` (backticks around just part of the text)
- * is left intact, since the normative Events header cell is exactly that.
+ * Split a pipe-delimited table row into trimmed cell strings.
  * @param {string} line
  * @returns {string[]}
  */
 function splitTableRow(line) {
-  let t = line.trim();
-  if (t.startsWith('|')) t = t.slice(1);
-  if (t.endsWith('|')) t = t.slice(0, -1);
+  const trimmed = line.trim();
+  let content = trimmed;
+  if (content.startsWith('|')) content = content.slice(1);
+  if (content.endsWith('|')) content = content.slice(0, -1);
 
   const cells = [];
   let current = '';
-  for (let i = 0; i < t.length; i++) {
-    const char = t[i];
-    if (char === '\\' && i + 1 < t.length && t[i + 1] === '|') {
+  let inCode = false;
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    if (char === '`') {
+      inCode = !inCode;
+      current += char;
+    } else if (char === '\\' && i + 1 < content.length && content[i + 1] === '|') {
       current += '|';
       i++;
-    } else if (char === '|') {
+    } else if (char === '|' && !inCode) {
       cells.push(stripOuterBackticks(current));
       current = '';
     } else {
@@ -148,9 +198,29 @@ function splitTableRow(line) {
  * @returns {{columns:string[], rows:string[][], endIndex:number}|null}
  */
 function findTableInRange(lines, start, end) {
-  for (let i = start; i < end; i++) {
-    if (!lines[i].trim().startsWith('|')) continue;
-    if (i + 1 >= end || !isSeparatorRow(lines[i + 1])) continue;
+  const tables = findTablesInRange(lines, start, end);
+  return tables.length ? tables[0] : null;
+}
+
+/**
+ * Locate and parse all GFM pipe tables within lines[start, end).
+ * @param {string[]} lines
+ * @param {number} start
+ * @param {number} end
+ * @returns {Array<{columns:string[], rows:string[][], endIndex:number}>}
+ */
+function findTablesInRange(lines, start, end) {
+  const tables = [];
+  let i = start;
+  while (i < end) {
+    if (!lines[i].trim().startsWith('|')) {
+      i++;
+      continue;
+    }
+    if (i + 1 >= end || !isSeparatorRow(lines[i + 1])) {
+      i++;
+      continue;
+    }
     const columns = splitTableRow(lines[i]);
     const rows = [];
     let j = i + 2;
@@ -158,9 +228,10 @@ function findTableInRange(lines, start, end) {
       rows.push(splitTableRow(lines[j]));
       j++;
     }
-    return { columns, rows, endIndex: j };
+    tables.push({ columns, rows, endIndex: j });
+    i = j;
   }
-  return null;
+  return tables;
 }
 
 /**
@@ -175,163 +246,385 @@ export function parseTable(lines) {
 }
 
 /**
- * Find a heading (by `title`, i.e. leading `N. ` stripped) at any level and
- * extract its first pipe table, mapped through rowMapper. Used for tables
- * that live directly under a `##` section (css SCSS API, pattern Included
- * Components) with no intervening `###` subheading.
- * @param {string[]} lines
- * @param {Array} headings
- * @param {string} title
- * @param {(row:string[]) => Object} rowMapper
- * @returns {Object[]}
+ * Dynamic column resolver using header synonyms.
+ * @param {string[]} rawColumns
+ * @param {Object.<string, string[]>} synonymMap - targetKey -> list of accepted header synonyms
+ * @returns {Object.<string, number>} targetKey -> columnIndex (-1 if missing)
  */
-function extractTableSection(lines, headings, title, rowMapper) {
-  const idx = headings.findIndex((h) => h.title === title);
-  if (idx === -1) return [];
-  const start = headings[idx].lineIndex + 1;
-  const end = sectionEnd(headings, idx, lines);
-  const table = findTableInRange(lines, start, end);
-  if (!table) return [];
-  return table.rows.map(rowMapper);
-}
+function resolveColumnIndices(rawColumns, synonymMap) {
+  const normHeaders = rawColumns.map((c) =>
+    (c || '')
+      .replace(/[`*_~]/g, '')
+      .trim()
+      .toLowerCase()
+  );
 
-/**
- * Find a `###` subheading (by title) nested under a specific `##` section
- * (by title) and extract its first pipe table. Used for the components §3
- * tables, which now live under explicit `### Attributes Table` /
- * `### Events API` subheadings rather than being located by column signature.
- * @param {string[]} lines
- * @param {Array} headings
- * @param {string} level2Title
- * @param {string} level3Title
- * @param {(row:string[]) => Object} rowMapper
- * @returns {Object[]}
- */
-function extractTableUnderSubheading(lines, headings, level2Title, level3Title, rowMapper) {
-  const parentIdx = headings.findIndex((h) => h.level === 2 && h.title === level2Title);
-  if (parentIdx === -1) return [];
-  const parentEnd = sectionEnd(headings, parentIdx, lines);
-
-  let subIdx = -1;
-  for (let k = parentIdx + 1; k < headings.length; k++) {
-    if (headings[k].lineIndex >= parentEnd) break;
-    if (headings[k].level === 3 && headings[k].title === level3Title) {
-      subIdx = k;
-      break;
+  const resolved = {};
+  for (const [targetKey, synonyms] of Object.entries(synonymMap)) {
+    let matchIdx = -1;
+    for (const syn of synonyms) {
+      const s = syn.toLowerCase();
+      matchIdx = normHeaders.findIndex((h) => h === s || h.startsWith(s));
+      if (matchIdx !== -1) break;
     }
+    resolved[targetKey] = matchIdx;
   }
-  if (subIdx === -1) return [];
-
-  const start = headings[subIdx].lineIndex + 1;
-  const end = Math.min(sectionEnd(headings, subIdx, lines), parentEnd);
-  const table = findTableInRange(lines, start, end);
-  if (!table) return [];
-  return table.rows.map(rowMapper);
+  return resolved;
 }
+
+const ATTRIBUTE_SYNONYMS = {
+  attribute: ['attribute', 'name', 'directive', 'property'],
+  element: ['element', 'target element', 'target', 'applies to', 'applies'],
+  typeValues: ['type / values', 'type/values', 'type', 'values', 'value format', 'value', 'format'],
+  default: ['default', 'default value', 'initial'],
+  description: ['description', 'details', 'summary', 'behavior', 'purpose']
+};
+
+const EVENT_SYNONYMS = {
+  event: ['event', 'name', 'event name'],
+  direction: ['direction', 'type', 'flow'],
+  cancelable: ['cancelable', 'cancellable'],
+  description: ['description', 'summary', 'details', 'purpose'],
+  detail: ['`detail` object', 'detail object', 'detail', 'payload']
+};
 
 /**
  * Extract fenced code blocks whose (normalized) fence language is in
- * `allowedLangs` within lines[start, end). `javascript` normalizes to `js`.
- * Each returned block carries its own normalized lang.
+ * `allowedLangs` within lines[start, end).
  * @param {string[]} lines
  * @param {number} start
  * @param {number} end
- * @param {string[]} allowedLangs - e.g. ["html"] or ["html", "js"]
+ * @param {string[]} allowedLangs
  * @returns {Array<{code:string, lang:string}>}
  */
 function extractFencedBlocks(lines, start, end, allowedLangs) {
   const blocks = [];
-  let i = start;
-  while (i < end) {
-    const trimmed = lines[i].trim();
-    const openMatch = trimmed.match(/^```(\S*)/);
-    if (openMatch) {
-      let language = (openMatch[1] || '').toLowerCase();
-      if (language === 'javascript') language = 'js';
-      const blockLines = [];
-      let j = i + 1;
-      while (j < end && lines[j].trim() !== '```') {
-        blockLines.push(lines[j]);
-        j++;
+  let inBlock = false;
+  let currentLang = 'html';
+  let currentLines = [];
+  let fenceChar = '`';
+  let fenceLen = 3;
+
+  for (let i = start; i < end; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    const openMatch = trimmed.match(/^(`{3,}|~{3,})([a-zA-Z0-9_-]*)/);
+
+    if (openMatch && !inBlock) {
+      fenceChar = openMatch[1][0];
+      fenceLen = openMatch[1].length;
+      let lang = openMatch[2].toLowerCase().trim() || 'html';
+      if (lang === 'javascript') lang = 'js';
+      if (allowedLangs.includes(lang)) {
+        inBlock = true;
+        currentLang = lang;
+        currentLines = [];
       }
-      if (allowedLangs.includes(language)) {
-        blocks.push({ code: blockLines.join('\n'), lang: language });
-      }
-      i = j + 1;
       continue;
     }
-    i++;
+
+    if (inBlock && trimmed.match(/^(`{3,}|~{3,})/)) {
+      const closeMatch = trimmed.match(/^(`{3,}|~{3,})/);
+      if (closeMatch[1][0] === fenceChar && closeMatch[1].length >= fenceLen) {
+        inBlock = false;
+        blocks.push({ code: currentLines.join('\n'), lang: currentLang });
+        currentLines = [];
+        continue;
+      }
+    }
+
+    if (inBlock) {
+      currentLines.push(line);
+    }
   }
+
   return blocks;
 }
 
-/**
- * Join same-lang fenced blocks into a single markup entry. If a subsection
- * somehow mixes langs, all blocks are joined and the lang of the first block
- * is used (edge case, not over-engineered).
- * @param {Array<{code:string, lang:string}>} blocks
- * @returns {{code:string, lang:string}|null}
- */
 function joinBlocks(blocks) {
-  if (!blocks.length) return null;
-  return { code: blocks.map((b) => b.code).join('\n\n'), lang: blocks[0].lang };
+  if (!blocks || blocks.length === 0) return null;
+  return {
+    code: blocks.map((b) => b.code).join('\n\n'),
+    lang: blocks[0].lang
+  };
 }
 
 /**
- * Extract the base markup + variants from the "Minimal HTML Markup & Usage
- * Variants" (components/css) or "Complete HTML Markup" (patterns) §2
- * section. Components with `classification: service` use ```js blocks under
- * the same frozen subheadings instead of ```html.
+ * Extract HTML/JS markup blocks from Section 2 (or equivalent markup section).
  * @param {string[]} lines
  * @param {Array} headings
- * @param {string[]} allowedLangs - e.g. ["html"] or ["html", "js"]
- * @returns {{base:{code:string, lang:string}|null, variants:Array<{title:string, code:string, lang:string}>}}
+ * @param {string[]} allowedLangs
+ * @param {string[]} [warnings]
+ * @returns {{base:{code:string, lang:string, provenance:string}|null, variants:Array<{title:string, code:string, lang:string}>}}
  */
-function extractMarkup(lines, headings, allowedLangs) {
-  const secIdx = headings.findIndex(
-    (h) =>
-      h.level === 2 &&
-      (h.title === 'Minimal HTML Markup & Usage Variants' || h.title === 'Complete HTML Markup')
-  );
-  if (secIdx === -1) return { base: null, variants: [] };
+function extractMarkup(lines, headings, allowedLangs, warnings = []) {
+  const sec2Idx = headings.findIndex((h) => {
+    if (h.level !== 2) return false;
+    const norm = normalizeTitle(h.title);
+    return (
+      norm.includes('markup') ||
+      norm.includes('usage') ||
+      norm.includes('html') ||
+      norm.includes('syntax')
+    );
+  });
 
-  const start = headings[secIdx].lineIndex + 1;
-  const end = sectionEnd(headings, secIdx, lines);
+  if (sec2Idx === -1) return { base: null, variants: [] };
 
+  const end = sectionEnd(headings, sec2Idx, lines);
   const subs = [];
-  for (let k = secIdx + 1; k < headings.length; k++) {
+  for (let k = sec2Idx + 1; k < headings.length; k++) {
     if (headings[k].lineIndex >= end) break;
     if (headings[k].level === 3) subs.push(k);
   }
 
-  if (subs.length === 0) {
-    const blocks = extractFencedBlocks(lines, start, end, allowedLangs);
-    return { base: joinBlocks(blocks), variants: [] };
-  }
-
   let base = null;
   const variants = [];
+
   for (const hIdx of subs) {
     const subStart = headings[hIdx].lineIndex + 1;
     const subEnd = Math.min(sectionEnd(headings, hIdx, lines), end);
     const blocks = extractFencedBlocks(lines, subStart, subEnd, allowedLangs);
     const title = headings[hIdx].title;
-    if (title === 'Base HTML Markup') {
+    const norm = normalizeTitle(title);
+
+    if (norm.startsWith('base html') || norm.startsWith('base markup') || norm === 'canonical markup') {
       const joined = joinBlocks(blocks);
-      if (joined) base = joined;
-    } else if (/^Variant\s+\d+:/.test(title)) {
+      if (joined) {
+        base = {
+          ...joined,
+          provenance: title === 'Base HTML Markup' ? 'canonical' : 'recovered'
+        };
+        if (title !== 'Base HTML Markup') {
+          warnings.push(`nonCanonicalBaseMarkupHeading: "${title}"`);
+        }
+      }
+    } else if (/^variant\s+\d+:/i.test(title) || norm.startsWith('variant') || norm.startsWith('ssr mode')) {
       const joined = joinBlocks(blocks);
       variants.push({ title, code: joined ? joined.code : '', lang: joined ? joined.lang : 'html' });
     }
   }
+
+  // Fallback: if no base heading matched, but Section 2 contains code block before first variant
+  if (!base) {
+    const firstSubStart = subs.length > 0 ? headings[subs[0]].lineIndex : end;
+    const directBlocks = extractFencedBlocks(lines, headings[sec2Idx].lineIndex + 1, firstSubStart, allowedLangs);
+    const joined = joinBlocks(directBlocks);
+    if (joined) {
+      base = {
+        ...joined,
+        provenance: 'recovered'
+      };
+      warnings.push(`directSection2BaseMarkup: recovered code block directly under "${headings[sec2Idx].title}"`);
+    }
+  }
+
   return { base, variants };
 }
 
 /**
+ * Extract attribute tables from Section 3 with provenance tracking.
+ * @param {string[]} lines
+ * @param {Array} headings
+ * @param {string[]} [warnings]
+ * @returns {Array<Object>}
+ */
+function extractAttributes(lines, headings, warnings = []) {
+  const parentIdx = headings.findIndex((h) => {
+    if (h.level !== 2) return false;
+    const norm = normalizeTitle(h.title);
+    return (
+      norm.includes('contract') ||
+      norm.includes('declarative api') ||
+      norm.includes('attributes') ||
+      norm.includes('api contract')
+    );
+  });
+
+  if (parentIdx === -1) return [];
+  const parentEnd = sectionEnd(headings, parentIdx, lines);
+
+  const attributes = [];
+  const subHeadings = [];
+  for (let k = parentIdx + 1; k < headings.length; k++) {
+    if (headings[k].lineIndex >= parentEnd) break;
+    if (headings[k].level === 3) subHeadings.push(k);
+  }
+
+  function extractFromTable(table, provenance, headingTitle) {
+    if (!table || !table.rows.length) return;
+    const colMap = resolveColumnIndices(table.columns, ATTRIBUTE_SYNONYMS);
+
+    for (const r of table.rows) {
+      const rawAttr = colMap.attribute !== -1 ? r[colMap.attribute] : r[0];
+      let attrKey = stripAllBackticks(rawAttr);
+      if (!attrKey) continue;
+      if (attrKey.includes("=")) {
+        attrKey = attrKey.split("=")[0].trim();
+      }
+      if (!attrKey) continue;
+
+      // Shape-based routing: colon-containing names that are not data-ln-* are events, not attributes
+      if (attrKey.includes(":") && !attrKey.startsWith("data-ln-")) {
+        continue;
+      }
+
+      const element = colMap.element !== -1 ? r[colMap.element] : (r[1] || '');
+      const typeValues = colMap.typeValues !== -1 ? r[colMap.typeValues] : (r[2] || '');
+      const defaultVal = colMap.default !== -1 ? r[colMap.default] : '';
+      const description = colMap.description !== -1 ? r[colMap.description] : (colMap.default === -1 ? r[3] : (r[4] || ''));
+
+      attributes.push({
+        attribute: attrKey,
+        element: element || '',
+        typeValues: typeValues || '',
+        default: defaultVal || '',
+        description: description || '',
+        provenance,
+        sourceHeading: headingTitle
+      });
+    }
+  }
+
+  // 1. Check tables under matching ### subheadings
+  for (const hIdx of subHeadings) {
+    const title = headings[hIdx].title;
+    const norm = normalizeTitle(title);
+
+    const isCanonical = title === 'Attributes Table';
+    const isAcceptedSubheading =
+      isCanonical ||
+      norm.includes('attribute') ||
+      norm.includes('vocabulary') ||
+      norm.includes('bindings');
+
+    if (isAcceptedSubheading) {
+      const start = headings[hIdx].lineIndex + 1;
+      const end = Math.min(sectionEnd(headings, hIdx, lines), parentEnd);
+      const table = findTableInRange(lines, start, end);
+      if (table) {
+        const provenance = isCanonical ? 'canonical' : 'recovered';
+        if (!isCanonical) {
+          warnings.push(`nonCanonicalAttributeHeading: "${title}"`);
+        }
+        extractFromTable(table, provenance, title);
+      }
+    }
+  }
+
+  // 2. If no subheadings matched, check for table directly under ##
+  if (attributes.length === 0) {
+    const firstSubStart = subHeadings.length > 0 ? headings[subHeadings[0]].lineIndex : parentEnd;
+    const directTables = findTablesInRange(lines, headings[parentIdx].lineIndex + 1, firstSubStart);
+    for (const directTable of directTables) {
+      extractFromTable(directTable, 'recovered', headings[parentIdx].title);
+    }
+    if (attributes.length > 0) {
+      warnings.push(`directSection3AttributeTable: recovered table directly under "${headings[parentIdx].title}"`);
+    }
+  }
+
+  return attributes;
+}
+
+/**
+ * Extract events table from Section 3 with provenance tracking.
+ * @param {string[]} lines
+ * @param {Array} headings
+ * @param {string[]} [warnings]
+ * @returns {Array<Object>}
+ */
+function extractEvents(lines, headings, warnings = []) {
+  const parentIdx = headings.findIndex((h) => {
+    if (h.level !== 2) return false;
+    const norm = normalizeTitle(h.title);
+    return (
+      norm.includes('contract') ||
+      norm.includes('declarative api') ||
+      norm.includes('events') ||
+      norm.includes('api contract')
+    );
+  });
+
+  if (parentIdx === -1) return [];
+  const parentEnd = sectionEnd(headings, parentIdx, lines);
+
+  const events = [];
+  const subHeadings = [];
+  for (let k = parentIdx + 1; k < headings.length; k++) {
+    if (headings[k].lineIndex >= parentEnd) break;
+    if (headings[k].level === 3) subHeadings.push(k);
+  }
+
+  function extractFromEventsTable(table, provenance, headingTitle, isFallback = false) {
+    if (!table || !table.rows.length) return;
+    const colMap = resolveColumnIndices(table.columns, EVENT_SYNONYMS);
+
+    for (const r of table.rows) {
+      const rawEvent = colMap.event !== -1 ? r[colMap.event] : r[0];
+      const eventKey = stripAllBackticks(rawEvent);
+      if (!eventKey) continue;
+
+      // In fallback / mixed tables, ensure row actually looks like an event
+      if (isFallback && !eventKey.includes(":") && colMap.direction === -1) {
+        continue;
+      }
+      if (eventKey.startsWith("data-ln-")) {
+        continue;
+      }
+
+      events.push({
+        event: eventKey,
+        direction: colMap.direction !== -1 ? r[colMap.direction] : (r[1] || 'Emits'),
+        cancelable: colMap.cancelable !== -1 ? r[colMap.cancelable] : (r[2] || 'No'),
+        description: colMap.description !== -1 ? r[colMap.description] : (r[3] || ''),
+        detail: colMap.detail !== -1 ? r[colMap.detail] : (r[4] || ''),
+        provenance,
+        sourceHeading: headingTitle
+      });
+    }
+  }
+
+  // 1. Check tables under matching ### subheadings
+  for (const hIdx of subHeadings) {
+    const title = headings[hIdx].title;
+    const norm = normalizeTitle(title);
+
+    const isCanonical = title === 'Events API';
+    const isAcceptedSubheading = isCanonical || norm.includes('event');
+
+    if (isAcceptedSubheading) {
+      const start = headings[hIdx].lineIndex + 1;
+      const end = Math.min(sectionEnd(headings, hIdx, lines), parentEnd);
+      const table = findTableInRange(lines, start, end);
+      if (table && table.rows.length) {
+        const provenance = isCanonical ? 'canonical' : 'recovered';
+        if (!isCanonical) {
+          warnings.push(`nonCanonicalEventsHeading: "${title}"`);
+        }
+        extractFromEventsTable(table, provenance, title, false);
+      }
+    }
+  }
+
+  // 2. Fallback: if no events extracted, check for tables directly under ##
+  if (events.length === 0) {
+    const firstSubStart = subHeadings.length > 0 ? headings[subHeadings[0]].lineIndex : parentEnd;
+    const directTables = findTablesInRange(lines, headings[parentIdx].lineIndex + 1, firstSubStart);
+    for (const directTable of directTables) {
+      extractFromEventsTable(directTable, 'recovered', headings[parentIdx].title, true);
+    }
+    if (events.length > 0) {
+      warnings.push(`directSection3EventsTable: recovered events directly under "${headings[parentIdx].title}"`);
+    }
+  }
+
+  return events;
+}
+
+/**
  * Extract relative markdown links (`./x.md`, `../folder/y.md#frag`) from the
- * document body, ignoring links inside fenced code blocks. Malformed link
- * targets (anything not matching the relative-.md shape) are simply ignored,
- * not reported.
+ * document body, ignoring links inside fenced code blocks.
  * @param {string[]} lines
  * @returns {string[]}
  */
@@ -364,44 +657,81 @@ function extractLinks(lines) {
 }
 
 /**
+ * Extract table section directly under a heading.
+ * @param {string[]} lines
+ * @param {Array} headings
+ * @param {string} title
+ * @param {(row:string[]) => Object} rowMapper
+ * @returns {Object[]}
+ */
+function extractTableSection(lines, headings, title, rowMapper) {
+  const idx = headings.findIndex((h) => normalizeTitle(h.title) === normalizeTitle(title));
+  if (idx === -1) return [];
+  const start = headings[idx].lineIndex + 1;
+  const end = sectionEnd(headings, idx, lines);
+  const table = findTableInRange(lines, start, end);
+  if (!table) return [];
+  return table.rows.map(rowMapper);
+}
+
+const JS_API_SYNONYMS = {
+  method: ['method', 'function', 'api', 'name'],
+  parameters: ['parameters', 'params', 'arguments', 'args'],
+  return: ['return', 'returns', 'type'],
+  description: ['description', 'summary', 'details', 'purpose']
+};
+
+/**
+ * Extract Programmatic JS API tables.
+ * @param {string[]} lines
+ * @param {Array} headings
+ * @returns {Array<Object>}
+ */
+function extractJsApi(lines, headings) {
+  const jsApi = [];
+  for (let i = 0; i < headings.length; i++) {
+    const title = headings[i].title;
+    const norm = normalizeTitle(title);
+    if (norm.includes('programmatic js api') || norm.includes('javascript api') || norm.startsWith('programmatic api')) {
+      const start = headings[i].lineIndex + 1;
+      const end = sectionEnd(headings, i, lines);
+      const table = findTableInRange(lines, start, end);
+      if (table && table.rows.length) {
+        const colMap = resolveColumnIndices(table.columns, JS_API_SYNONYMS);
+        for (const r of table.rows) {
+          const rawMethod = colMap.method !== -1 ? r[colMap.method] : r[0];
+          const methodKey = stripAllBackticks(rawMethod);
+          if (!methodKey) continue;
+          jsApi.push({
+            method: methodKey,
+            parameters: colMap.parameters !== -1 ? r[colMap.parameters] : (r[1] || ''),
+            return: colMap.return !== -1 ? r[colMap.return] : (r[2] || ''),
+            description: colMap.description !== -1 ? r[colMap.description] : (r[3] || '')
+          });
+        }
+      }
+    }
+  }
+  return jsApi;
+}
+
+/**
  * Parse a single ln-ashlar docs-mcp markdown document.
  * @param {string} markdown - raw markdown source (including frontmatter)
- * @param {Object} [meta] - optional caller metadata (not used for parsing logic)
- * @returns {Object} parsed document structure (see tools/ashlar module docs)
+ * @param {Object} [meta] - optional caller metadata
+ * @returns {Object} parsed document structure
  */
 export function parseDoc(markdown, meta = {}) {
   const { data: frontmatter, body } = parseFrontmatter(markdown);
   const lines = body.split(/\r?\n/);
-  const headings = computeHeadings(lines);
+  const warnings = [];
+
+  const headings = computeHeadings(lines, warnings);
   const sections = buildSections(lines, headings);
 
-  const attributes = extractTableUnderSubheading(
-    lines,
-    headings,
-    'Declarative API Contract (Attributes & Events)',
-    'Attributes Table',
-    (r) => ({
-      attribute: stripAllBackticks(r[0]),
-      element: r[1],
-      typeValues: r[2],
-      default: r[3],
-      description: r[4]
-    })
-  );
-
-  const events = extractTableUnderSubheading(
-    lines,
-    headings,
-    'Declarative API Contract (Attributes & Events)',
-    'Events API',
-    (r) => ({
-      event: stripAllBackticks(r[0]),
-      direction: r[1],
-      cancelable: r[2],
-      description: r[3],
-      detail: r[4]
-    })
-  );
+  const attributes = extractAttributes(lines, headings, warnings);
+  const events = extractEvents(lines, headings, warnings);
+  const jsApi = extractJsApi(lines, headings);
 
   const scssApi = extractTableSection(lines, headings, 'SCSS API (Mixins, Classes & Tokens)', (r) => ({
     name: stripAllBackticks(r[0]),
@@ -416,7 +746,7 @@ export function parseDoc(markdown, meta = {}) {
   }));
 
   const allowedLangs = frontmatter && frontmatter.classification === 'service' ? ['html', 'js'] : ['html'];
-  const markup = extractMarkup(lines, headings, allowedLangs);
+  const markup = extractMarkup(lines, headings, allowedLangs, warnings);
   const links = extractLinks(lines);
 
   return {
@@ -425,9 +755,12 @@ export function parseDoc(markdown, meta = {}) {
     sections,
     attributes,
     events,
+    jsApi,
     markup,
     scssApi,
     includedComponents,
-    links
+    links,
+    warnings
   };
 }
+

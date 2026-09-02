@@ -20,23 +20,19 @@ export const definition = {
 			.string()
 			.default("tbody tr")
 			.describe("CSS селектор за ставките што се филтрираат (на пр. 'tbody tr', 'li', '.ln-card')"),
-		debounce: z
-			.number()
-			.optional()
-			.describe("Задоцнување во ms. 0 = инстант локален DOM филтер; >=150 за API пребарување."),
 		placeholder: z.string().default("Пребарај...").describe("Placeholder текст"),
 		label: z.string().default("Пребарај").describe("ARIA label за пристапност")
 	}
 };
 
-export const handler = async ({ id, target_id, search_items = "tbody tr", debounce, placeholder, label }) =>
+export const handler = async ({ id, target_id, search_items = "tbody tr", placeholder, label }) =>
 	htmlResult(
 		compileTemplate(loadTemplate("components/search.html"), {
 			id,
 			target_id,
 			search_items,
 			placeholder,
-			label,
-			debounce_attr: raw(attr(ATTR.searchDebounce, debounce))
+			label
 		})
 	);
+

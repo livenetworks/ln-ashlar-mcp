@@ -12,7 +12,7 @@ describe("validateCorpus — single root", () => {
   const [root] = validateCorpus([FIXTURE_REPO]);
 
   test("every fixture file appears exactly once in the report", () => {
-    assert.equal(root.files.length, 17);
+    assert.equal(root.files.length, 20);
     const files = root.files.map((r) => r.file);
     const unique = new Set(files);
     assert.equal(unique.size, files.length);
@@ -22,6 +22,9 @@ describe("validateCorpus — single root", () => {
     assert.ok(files.includes("components/ln-empty-service.md"));
     assert.ok(files.includes("components/ln-nohtml.md"));
     assert.ok(files.includes("components/ln-stub.md"));
+    assert.ok(files.includes("components/ln-patho-mixed.md"));
+    assert.ok(files.includes("components/ln-patho-4col.md"));
+    assert.ok(files.includes("components/ln-patho-direct.md"));
     assert.ok(files.includes("css/fake-css.md"));
     assert.ok(files.includes("patterns/fake-pattern.md"));
     assert.ok(files.includes("doctrine/fake-doctrine.md"));

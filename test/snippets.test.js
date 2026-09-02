@@ -197,8 +197,8 @@ describe("CRUD модулот произведува жив markup", () => {
 		assert.doesNotMatch(html, /data-ln-store-indexes=/);
 	});
 
-	test("B4: постои data-ln-modal-coordinator предок над тригерите и dialog-от", () => {
-		const start = dom.indexOf("data-ln-modal-coordinator");
+	test("B4: постои data-ln-ui-coordinator предок над тригерите и dialog-от", () => {
+		const start = dom.indexOf("data-ln-ui-coordinator");
 		assert.ok(start !== -1, "недостасува координаторот — тригерите би биле мртви");
 		const scope = dom.slice(start);
 		assert.match(scope, /data-ln-modal-for=/, "тригерот мора да е внатре во координаторот");
@@ -225,8 +225,8 @@ describe("CRUD модулот произведува жив markup", () => {
 	});
 
 	test("H1/H2: сортирањето и селекцијата се навистина вклучени", () => {
-		// CRUD модулот е секогаш data-driven, па користи data-ln-sort, а не data-ln-table-sort
-		assert.match(html, /data-ln-sort="users"/);
+		// Сортирањето таргетира id на приказот (табелата), а не изворот
+		assert.match(html, /data-ln-sort="users-module-table"/);
 		assert.match(html, /data-ln-table-selectable/);
 	});
 
@@ -278,8 +278,8 @@ describe("builders", () => {
 	});
 
 	test("модалот по default се обвиткува во координатор, со wrap:false не", () => {
-		assert.match(buildModal({ id: "m", title: "T" }), /data-ln-modal-coordinator/);
-		assert.doesNotMatch(buildModal({ id: "m", title: "T", wrap: false }), /data-ln-modal-coordinator/);
+		assert.match(buildModal({ id: "m", title: "T" }), /data-ln-ui-coordinator/);
+		assert.doesNotMatch(buildModal({ id: "m", title: "T", wrap: false }), /data-ln-ui-coordinator/);
 	});
 
 	test("поле без валидација не носи празна листа со грешки", () => {

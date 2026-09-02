@@ -388,7 +388,7 @@ export function buildTable({
 
 		if (col.sortable) {
 			if (dataDriven) {
-				bits.push(buildSortControl({ target: queryTarget, fields: [{ field: col.field, label: col.label }] }));
+				bits.push(buildSortControl({ target: id, fields: [{ field: col.field, label: col.label }] }));
 			} else {
 				bits.push(sortButton(col.label));
 			}
@@ -430,14 +430,13 @@ export function buildTable({
 			cells.push(`<td ${ATTR.field}="${escapeHtml(col.field)}"></td>`);
 		}
 		if (actions) {
-			const href = modalId ? ` href="#${escapeHtml(modalId)}"` : "";
 			const modalFor = attr(ATTR.modalFor, modalId);
 			const fillForm = attr(ATTR.fillForm, formId);
 			cells.push(
 				`<td>\n` +
-					`\t<a${href} class="ln-btn ln-btn-icon"${modalFor}${fillForm} ${ATTR.tableRowAction}="edit" aria-label="Уреди">\n` +
+					`\t<button type="button" class="ln-btn ln-btn-icon"${modalFor}${fillForm} ${ATTR.tableRowAction}="edit" aria-label="Уреди">\n` +
 					`\t\t<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-edit"></use></svg>\n` +
-					`\t</a>\n` +
+					`\t</button>\n` +
 					`</td>`
 			);
 		}
@@ -591,8 +590,8 @@ export function buildEmptyState({
 /**
  * Гради `<dialog data-ln-modal>`.
  *
- * ВАЖНО: тригерите работат само ако постои предок со data-ln-modal-coordinator —
- * ln-modal-coordinator.js прави `triggerEl.closest('[data-ln-modal-coordinator]')`.
+ * ВАЖНО: тригерите работат само ако постои предок со data-ln-ui-coordinator —
+ * ln-ui-coordinator.js прави `triggerEl.closest('[data-ln-ui-coordinator]')`.
  * Затоа `wrap: true` (default) го обвиткува dialog-от во таков `<section>`.
  * Кога модалот се вградува во веќе координиран поддел (на пр. CRUD модулот),
  * подај `wrap: false`.
@@ -684,6 +683,6 @@ export function buildModal({
 
 	return (
 		`<!-- Layer 2 координатор: без овој предок data-ln-modal-for тригерите се мртви -->\n` +
-		`<section ${ATTR.modalCoordinator}>\n${indentBlock(dialog, 1)}\n</section>`
+		`<section ${ATTR.uiCoordinator}>\n${indentBlock(dialog, 1)}\n</section>`
 	);
 }

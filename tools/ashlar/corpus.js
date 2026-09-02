@@ -158,12 +158,23 @@ export function buildIndex(rootPaths) {
   const byName = new Map(); // name -> [compositeKey, ...]
   const attributeIndex = new Map();
   const eventIndex = new Map();
+  const apiIndex = new Map();
   const markupIndex = new Map(); // compositeKey -> markup
   const sectionUnits = [];
   const rootMeta = [];
   const routers = []; // one entry per root that carries a component-router.md
+  const validAttributes = new Set();
 
   roots.forEach((rootPath, rootIndex) => {
+    const genAttrsPath = path.join(rootPath, 'components/ln-debug/src/generated-attributes.js');
+    if (fs.existsSync(genAttrsPath)) {
+      try {
+        const rawGen = fs.readFileSync(genAttrsPath, 'utf8');
+        const matches = rawGen.match(/data-ln-[a-z0-9-]+/g) || [];
+        for (const m of matches) validAttributes.add(m);
+      } catch {}
+    }
+
     const corpusRoot = path.join(rootPath, 'docs-mcp');
     const rootLabel = path.basename(rootPath) || rootPath;
 
@@ -272,7 +283,9 @@ export function buildIndex(rootPaths) {
           element: attr.element,
           typeValues: attr.typeValues,
           default: attr.default,
-          description: attr.description
+          description: attr.description,
+          status: docEntry.status || 'stable',
+          provenance: attr.provenance || 'canonical'
         });
       }
 
@@ -289,8 +302,30 @@ export function buildIndex(rootPaths) {
           direction: ev.direction,
           cancelable: ev.cancelable,
           detail: ev.detail,
-          description: ev.description
+          description: ev.description,
+          status: docEntry.status || 'stable',
+          provenance: ev.provenance || 'canonical'
         });
+      }
+
+      if (parsed.jsApi && parsed.jsApi.length) {
+        for (const api of parsed.jsApi) {
+          const m = (api.method || '').trim();
+          if (!m) continue;
+          if (!apiIndex.has(m)) apiIndex.set(m, []);
+          apiIndex.get(m).push({
+            component: name,
+            key,
+            domain,
+            context: docEntry.context,
+            rootLabel,
+            method: api.method,
+            parameters: api.parameters,
+            return: api.return,
+            description: api.description,
+            status: docEntry.status || 'stable'
+          });
+        }
       }
 
       markupIndex.set(key, parsed.markup);
@@ -423,6 +458,8 @@ export function buildIndex(rootPaths) {
     registry,
     attributeIndex,
     eventIndex,
+    apiIndex,
+    validAttributes,
     markupIndex,
     linkGraph,
     fuse,

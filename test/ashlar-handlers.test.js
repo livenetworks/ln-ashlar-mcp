@@ -15,6 +15,7 @@ const { handler: relatedHandler } = await import("../tools/get_related.js");
 const { handler: componentHandler } = await import("../tools/get_component.js");
 const { handler: attributeHandler } = await import("../tools/get_attribute.js");
 const { handler: whoHandlesHandler } = await import("../tools/who_handles.js");
+const { handler: apiHandler } = await import("../tools/get_api.js");
 
 describe("search_docs — context hard rule + filters", () => {
   test("default context 'app': fake-skill-web (context web) is absent", async () => {
@@ -101,10 +102,30 @@ describe("get_attribute / who_handles — domain narrows, does not force disambi
   test("get_attribute with domain filters the declaration list", async () => {
     const result = await attributeHandler({ attribute: "data-ln-fake-service", domain: "backend" });
     assert.match(result.content[0].text, /ln-fake-service/);
+    assert.match(result.content[0].text, /stable/);
   });
 
   test("who_handles with domain filters emitters/listeners", async () => {
     const result = await whoHandlesHandler({ event: "ln:fake:activate", domain: "frontend" });
     assert.match(result.content[0].text, /ln-fake/);
+  });
+
+  test("who_handles for intake event without emitter renders guidance note", async () => {
+    const result = await whoHandlesHandler({ event: "ln:fake:request-action" });
+    assert.match(result.content[0].text, /No declarative HTML emitter in core/);
+  });
+});
+
+describe("get_api — programmatic JS API lookup", () => {
+  test("get_api returns method signatures for service with jsApi", async () => {
+    const result = await apiHandler({ name: "ln-fake-service" });
+    const text = result.content[0].text;
+    assert.match(text, /Programmatic JS API for "ln-fake-service"/);
+  });
+
+  test("get_api for doc without jsApi indicates declarative contract alternative", async () => {
+    const result = await apiHandler({ name: "ln-fake" });
+    const text = result.content[0].text;
+    assert.match(text, /declares no programmatic JS API methods/);
   });
 });

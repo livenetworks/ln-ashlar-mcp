@@ -61,7 +61,7 @@ describe("buildIndex — routing contract loading", () => {
   });
 
   test("adding the fixture router did not change the indexed document count", () => {
-    assert.equal(buildIndex([FIXTURE_REPO]).registry.length, 14);
+    assert.equal(buildIndex([FIXTURE_REPO]).registry.length, 17);
   });
 });
 

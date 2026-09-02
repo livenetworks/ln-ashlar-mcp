@@ -79,31 +79,24 @@ function walk(dir, exts, acc = []) {
 }
 
 /**
- * Собери ги сите data-ln-* атрибути што ги чита кодот на ln-ashlar.
+ * Собери ги сите data-ln-* атрибути директно од машински генерираниот allowlist (Слој 1).
  * @param {string[]} roots
- * @returns {{ attrs: Set<string>, filesScanned: number, rootsUsed: string[] }}
+ * @returns {{ attrs: Set<string>, rootsUsed: string[] }}
  */
-function collectFromCode(roots) {
+function collectFromAllowlist(roots) {
 	const attrs = new Set();
 	const rootsUsed = [];
-	let filesScanned = 0;
 
 	for (const root of roots) {
-		let touched = false;
-		for (const { dir, exts } of SOURCE_DIRS) {
-			const base = path.join(root, dir);
-			if (!fs.existsSync(base)) continue;
-			touched = true;
-			for (const file of walk(base, exts)) {
-				filesScanned++;
-				const text = fs.readFileSync(file, "utf-8");
-				for (const match of text.matchAll(ATTR_RE)) attrs.add(match[0]);
-			}
+		const genFile = path.join(root, "components", "ln-debug", "src", "generated-attributes.js");
+		if (fs.existsSync(genFile)) {
+			const text = fs.readFileSync(genFile, "utf-8");
+			for (const match of text.matchAll(ATTR_RE)) attrs.add(match[0]);
+			rootsUsed.push(root);
 		}
-		if (touched) rootsUsed.push(root);
 	}
 
-	return { attrs, filesScanned, rootsUsed };
+	return { attrs, rootsUsed };
 }
 
 /**
@@ -209,16 +202,16 @@ function main() {
 		process.exit(1);
 	}
 
-	const { attrs, filesScanned, rootsUsed } = collectFromCode(roots);
+	const { attrs, rootsUsed } = collectFromAllowlist(roots);
 
 	if (!rootsUsed.length) {
 		console.error(
-			`sync-ln-attrs: ниту еден root нема js/ или scss/ поддиректориум: ${roots.join(", ")}`
+			`sync-ln-attrs: ниту еден root нема components/ln-debug/src/generated-attributes.js: ${roots.join(", ")}`
 		);
 		process.exit(1);
 	}
 	if (!attrs.size) {
-		console.error(`sync-ln-attrs: скенирани ${filesScanned} фајлови, но не е најден ниту еден data-ln-* атрибут.`);
+		console.error(`sync-ln-attrs: не е најден ниту еден data-ln-* атрибут во generated-attributes.js.`);
 		process.exit(1);
 	}
 
@@ -238,8 +231,7 @@ function main() {
 	const inCodeNotInSchema = [...attrs].filter((a) => !schemaAttrs.has(a)).sort();
 
 	console.log(`sync-ln-attrs: root(s): ${rootsUsed.join(", ")}`);
-	console.log(`  скенирани фајлови: ${filesScanned}`);
-	console.log(`  атрибути во кодот: ${attrs.size}`);
+	console.log(`  атрибути во allowlist: ${attrs.size}`);
 	console.log(`  атрибути во схемата: ${schemaAttrs.size}`);
 
 	if (inSchemaNotInCode.length) {

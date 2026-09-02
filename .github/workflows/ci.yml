@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout MCP repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint snippets conformance
+        run: npm run lint:snippets
+
+      - name: Smoke test all generators
+        run: npm run smoke:generators
+
+      - name: Audit contract coverage (fixtures)
+        run: npm run audit:coverage -- --root=test/fixtures/ashlar-repo
+
+      - name: Run unit test suite
+        run: node --test test/ashlar-*.test.js test/snippets.test.js

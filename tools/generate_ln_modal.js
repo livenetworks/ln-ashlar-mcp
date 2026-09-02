@@ -11,8 +11,8 @@ export const definition = {
 	description:
 		ROUTER_FIRST_HINT +
 		"Генерира <dialog data-ln-modal>. Кога модалот содржи форма, <form data-ln-form> е ДИРЕКТЕН ПРВ CHILD. " +
-		"Dialog-от се обвиткува во <section data-ln-modal-coordinator> — ln-modal-coordinator бара " +
-		"triggerEl.closest('[data-ln-modal-coordinator]'), па без тој предок data-ln-modal-for тригерите не работат.",
+		"Dialog-от се обвиткува во <section data-ln-ui-coordinator> — ln-ui-coordinator бара " +
+		"triggerEl.closest('[data-ln-ui-coordinator]'), па без тој предок data-ln-modal-for тригерите не работат.",
 	inputSchema: {
 		id: z.string().describe("Уникатен ID за модалот (на пр. 'doc-modal')"),
 		resource: z.string().optional().describe("Име на ресурсот за data-ln-form-scope (на пр. 'documents')"),
@@ -25,7 +25,7 @@ export const definition = {
 		wrap_coordinator: z
 			.boolean()
 			.default(true)
-			.describe("Дали да го обвитка во <section data-ln-modal-coordinator>. Исклучи само ако веќе постои таков предок."),
+			.describe("Дали да го обвитка во <section data-ln-ui-coordinator>. Исклучи само ако веќе постои таков предок."),
 		form_config: z
 			.object({
 				id: z.string().optional().describe("Прилагоден ID за формата (на пр. 'doc-form')"),

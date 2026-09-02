@@ -70,7 +70,7 @@ export const handler = async ({ name: docName, variant, domain }) => {
       content: [
         {
           type: "text",
-          text: `Base markup for "${docName}":\n\n${base}\n\nAvailable variants:\n${variantList}`
+          text: `Base markup for "${docName}" (status: ${doc.status ?? "stable"}):\n\n${base}\n\nAvailable variants:\n${variantList}`
         }
       ]
     };

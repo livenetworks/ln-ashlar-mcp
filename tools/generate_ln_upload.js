@@ -25,7 +25,6 @@ export const definition = {
 		name: z.string().default("file").describe("Име на инпут полето"),
 		accept: z.string().default(".pdf,.doc,.docx,.png,.jpg").describe("Дозволени екстензии"),
 		delete_url: z.string().optional().describe("Endpoint за бришење (data-ln-upload-delete)"),
-		context: z.string().optional().describe("Контекст што се праќа со FormData (data-ln-upload-context)"),
 		multiple: z.boolean().default(false).describe("Дали е дозволен избор на повеќе фајлови"),
 		required: z.boolean().default(false).describe("Дали е задолжително поле"),
 		hint: z.string().optional().describe("Забелешка под полето. Default: изведена од accept.")
@@ -38,7 +37,6 @@ export const handler = async ({
 	name: fieldName = "file",
 	accept = ".pdf,.doc,.docx,.png,.jpg",
 	delete_url,
-	context,
 	multiple = false,
 	required = false,
 	hint
@@ -53,7 +51,6 @@ export const handler = async ({
 				action_url,
 				hint: hint ?? `Дозволени формати: ${accept}`,
 				delete_attr: raw(attr(ATTR.uploadDelete, delete_url)),
-				context_attr: raw(attr(ATTR.uploadContext, context)),
 				multiple_attr: raw(flag("multiple", multiple)),
 				required_attr: raw(flag("required", required) + flag(ATTR.validate, required))
 			},
