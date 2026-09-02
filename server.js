@@ -236,11 +236,56 @@ const forbiddenSessionOwner = (res) => res.status(403).json({
 });
 
 //=============================================================================
-// 1. STREAMABLE HTTP TRANSPORT (PROTOCOL VERSION 2025-11-25)
+// 1. STREAMABLE HTTP & SSE TRANSPORTS
 //=============================================================================
+const handleSseConnection = async (req, res) => {
+  console.log(`Received SSE connection on ${req.path}`);
+  const transport = new SSEServerTransport('/messages', res);
+  transports[transport.sessionId] = transport;
+  sessionUsers[transport.sessionId] = req.authUser;
+  const userAgent = req.headers['user-agent'];
+  if (userAgent) {
+    sessionClients[transport.sessionId] = { name: userAgent };
+  }
+  res.on('close', () => {
+    console.log(`SSE connection closed for session ${transport.sessionId}`);
+    delete transports[transport.sessionId];
+    delete sessionUsers[transport.sessionId];
+    delete sessionClients[transport.sessionId];
+  });
+  const serverInstance = await createMcpServer();
+  await serverInstance.connect(transport);
+};
+
 app.all(['/', '/mcp'], async (req, res) => {
   try {
+    // 1. Handle discovery requests (e.g. from modern MCP clients like Antigravity)
+    if (req.method === 'POST' && req.body?.method === 'server/discover') {
+      return res.json({
+        jsonrpc: '2.0',
+        id: req.body.id ?? null,
+        result: {
+          serverInfo: {
+            name: "mcp-http-server",
+            version: "1.0.0"
+          },
+          protocolVersion: req.body?.params?._meta?.['io.modelcontextprotocol/protocolVersion'] || "2025-11-25",
+          capabilities: {
+            tools: { listChanged: true },
+            resources: { listChanged: true },
+            prompts: { listChanged: true }
+          }
+        }
+      });
+    }
+
     const sessionId = req.headers['mcp-session-id'];
+
+    // 2. Handle GET SSE stream requests without session (SSE client pointing to /mcp or /)
+    if (req.method === 'GET' && !sessionId && req.headers['accept']?.includes('text/event-stream')) {
+      return handleSseConnection(req, res);
+    }
+
     let transport;
 
     if (sessionId && transports[sessionId]) {
@@ -262,7 +307,7 @@ app.all(['/', '/mcp'], async (req, res) => {
           id: null
         });
       }
-    } else if (!sessionId && req.method === 'POST' && isInitializeRequest(req.body)) {
+    } else if (!sessionId && req.method === 'POST' && (isInitializeRequest(req.body) || req.body?.method === 'initialize')) {
       const initiatingUser = req.authUser;
       const clientInfo = req.body?.params?.clientInfo;
       transport = new StreamableHTTPServerTransport({
@@ -317,24 +362,7 @@ app.all(['/', '/mcp'], async (req, res) => {
 //=============================================================================
 // 2. HTTP + SSE TRANSPORT (PROTOCOL VERSION 2024-11-05)
 //=============================================================================
-app.get('/sse', async (req, res) => {
-  console.log('Received GET request to /sse (SSE transport)');
-  const transport = new SSEServerTransport('/messages', res);
-  transports[transport.sessionId] = transport;
-  sessionUsers[transport.sessionId] = req.authUser;
-  const userAgent = req.headers['user-agent'];
-  if (userAgent) {
-    sessionClients[transport.sessionId] = { name: userAgent };
-  }
-  res.on('close', () => {
-    console.log(`SSE connection closed for session ${transport.sessionId}`);
-    delete transports[transport.sessionId];
-    delete sessionUsers[transport.sessionId];
-    delete sessionClients[transport.sessionId];
-  });
-  const serverInstance = await createMcpServer();
-  await serverInstance.connect(transport);
-});
+app.get('/sse', handleSseConnection);
 
 app.post('/messages', async (req, res) => {
   const sessionId = req.query.sessionId;
