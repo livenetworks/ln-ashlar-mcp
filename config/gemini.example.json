@@ -5,7 +5,7 @@
 	"maxIterations": 3,
 	"geminiBin": "agy",
 	"geminiHome": "/home/mcp",
-	"geminiCwd": "",
+	"geminiCwd": "/home/mcp/ln-ashlar",
 	"maxOutputBytes": 1048576,
 	"auditLog": true
 }

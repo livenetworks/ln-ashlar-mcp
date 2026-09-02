@@ -5,7 +5,8 @@
 	"maxIterations": 3,
 	"claudeBin": "claude",
 	"claudeHome": "/home/mcp",
-	"claudeCwd": "/tmp",
+	"claudeCwd": "/home/mcp/ln-ashlar",
+	"tools": "Read,Glob,Grep",
 	"maxOutputBytes": 1048576,
 	"auditLog": true
 }
