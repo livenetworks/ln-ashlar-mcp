@@ -36,7 +36,7 @@ export default function authMiddleware(req, res, next) {
     return next();
   }
 
-  const allowQueryCreds = req.path === '/sse' || req.path === '/messages';
+  const allowQueryCreds = req.path === '/sse' || req.path === '/messages' || req.path === '/mcp' || req.path === '/' || req.headers['accept']?.includes('text/event-stream');
 
   let authHeader = req.headers['authorization'] || (allowQueryCreds && (req.query['authorization'] || req.query['token']));
   let clientIdHeader = req.headers['x-client-id'] || (allowQueryCreds && (req.query['client-id'] || req.query['clientId']));
