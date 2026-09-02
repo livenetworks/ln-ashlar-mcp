@@ -1,11 +1,11 @@
 {
-	"model": "gemini-3.6-flash-high",
+	"model": "gemini-3.1-pro-high",
 	"timeoutMs": 240000,
 	"concurrency": 2,
 	"maxIterations": 3,
 	"geminiBin": "agy",
-	"geminiHome": "/path/to/gemini/home",
-	"geminiCwd": "/path/to/gemini/cwd",
+	"geminiHome": "/home/mcp",
+	"geminiCwd": "",
 	"maxOutputBytes": 1048576,
 	"auditLog": true
 }
