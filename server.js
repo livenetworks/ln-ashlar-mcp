@@ -16,6 +16,31 @@ import { buildInstructions } from "./tools/ashlar/instructions.js";
 import { pathToFileURL, fileURLToPath } from 'url';
 
 const app = express();
+
+// CORS middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  const reqHeaders = req.headers['access-control-request-headers'];
+  if (reqHeaders) {
+    res.header('Access-Control-Allow-Headers', reqHeaders);
+  } else {
+    res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept, mcp-session-id, mcp-protocol-version, x-client-id, X-Client-Id, *');
+  }
+  res.header('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version, content-type, content-length');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

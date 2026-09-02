@@ -32,6 +32,10 @@ const unauthorized = (req, res, error) => {
  * `req.authUser = username` (used to bind MCP sessions to their owner).
  */
 export default function authMiddleware(req, res, next) {
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   const allowQueryCreds = req.path === '/sse' || req.path === '/messages';
 
   let authHeader = req.headers['authorization'] || (allowQueryCreds && (req.query['authorization'] || req.query['token']));
