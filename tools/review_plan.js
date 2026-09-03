@@ -5,6 +5,7 @@ import { runReview, detectReviewerEngine, loadReviewConfig } from "../lib/review
 import { buildReviewPrompt, extractVerdict } from "../lib/gemini-prompts.js";
 import { createReviewJob, updateReviewJob } from "../lib/review-jobs.js";
 
+
 // Winston logger for review_plan operations
 const logger = winston.createLogger({
 	level: "info",
@@ -130,7 +131,7 @@ export const handler = async (args, extra) => {
 
 		(async () => {
 			try {
-				const { text, engine, model } = await runReview(prompt, {
+				const { text, engine, model, parsed } = await runReview(prompt, {
 					engine: resolvedEngine,
 					caller,
 					extra,
@@ -138,6 +139,12 @@ export const handler = async (args, extra) => {
 				});
 				const durationMs = Date.now() - start;
 				const verdict = extractVerdict(text);
+				
+				const inputTokens = parsed?.usage?.input_tokens ?? 0;
+				const outputTokens = parsed?.usage?.output_tokens ?? 0;
+				const totalTokens = parsed?.usage?.total_tokens ?? (inputTokens + outputTokens);
+				const costUSD = parsed?.total_cost_usd ?? 0;
+
 				logger.info({
 					event: "review_plan_async_completed",
 					job_id: job.id,
@@ -148,6 +155,11 @@ export const handler = async (args, extra) => {
 					wrap_up: !!wrap_up,
 					charsIn: prompt.length,
 					charsOut: text.length,
+					inputTokens,
+					outputTokens,
+					totalTokens,
+					costUSD,
+					taskContext: context ? context.substring(0, 100) : "N/A",
 					durationMs,
 					verdict,
 					model
@@ -231,7 +243,7 @@ export const handler = async (args, extra) => {
 	}
 
 	try {
-		const { text, engine, model } = await runReview(prompt, {
+		const { text, engine, model, parsed } = await runReview(prompt, {
 			engine: resolvedEngine,
 			caller,
 			extra,
@@ -239,6 +251,12 @@ export const handler = async (args, extra) => {
 		});
 		const durationMs = Date.now() - start;
 		const verdict = extractVerdict(text);
+
+		const inputTokens = parsed?.usage?.input_tokens ?? 0;
+		const outputTokens = parsed?.usage?.output_tokens ?? 0;
+		const totalTokens = parsed?.usage?.total_tokens ?? (inputTokens + outputTokens);
+		const costUSD = parsed?.total_cost_usd ?? 0;
+
 		logger.info({
 			event: "review_plan",
 			engine,
@@ -248,6 +266,11 @@ export const handler = async (args, extra) => {
 			wrap_up: !!wrap_up,
 			charsIn: prompt.length,
 			charsOut: text.length,
+			inputTokens,
+			outputTokens,
+			totalTokens,
+			costUSD,
+			taskContext: context ? context.substring(0, 100) : "N/A",
 			durationMs,
 			verdict,
 			model

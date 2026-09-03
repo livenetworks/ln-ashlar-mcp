@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/*.test.js",
+    "test": "RAG_ENABLED=0 node --test test/*.test.js",
     "lint:docs": "node tools/ashlar/lint-cli.js",
     "lint:snippets": "node scripts/lint-snippets.js",
     "smoke:generators": "node scripts/smoke-generators.js",
@@ -16,7 +17,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
+  "engines": {
+    "node": ">=20.11.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^5.2.1",
@@ -25,5 +28,8 @@
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.4.3"
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^3.0.0"
   }
 }
