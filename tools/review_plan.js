@@ -3,6 +3,7 @@ import winston from "winston";
 import "winston-daily-rotate-file";
 import { runReview, detectReviewerEngine, loadReviewConfig } from "../lib/review-runner.js";
 import { buildReviewPrompt, extractVerdict } from "../lib/gemini-prompts.js";
+import { createReviewJob, updateReviewJob } from "../lib/review-jobs.js";
 
 // Winston logger for review_plan operations
 const logger = winston.createLogger({
@@ -82,12 +83,16 @@ export const definition = {
 		wrap_up: z
 			.boolean()
 			.optional()
-			.describe("Set true on a final extra call AFTER the loop ends to get a short retrospective of the whole review conversation; pass ALL previous critiques concatenated in previous_feedback")
+			.describe("Set true on a final extra call AFTER the loop ends to get a short retrospective of the whole review conversation; pass ALL previous critiques concatenated in previous_feedback"),
+		async: z
+			.boolean()
+			.optional()
+			.describe("When true, runs the review asynchronously in the background and returns a job_id immediately so the HTTP connection never times out. Retrieve the result later using get_review_result.")
 	}
 };
 
 export const handler = async (args, extra) => {
-	const { plan, plan_type, context, previous_feedback, iteration, wrap_up, reviewer, caller } = args;
+	const { plan, plan_type, context, previous_feedback, iteration, wrap_up, reviewer, caller, async: isAsync } = args;
 	const planType = plan_type || "generic";
 	const apiKeyId = extra?.authInfo?.clientId ?? "unknown";
 
@@ -114,6 +119,116 @@ export const handler = async (args, extra) => {
 
 	const prompt = buildReviewPrompt({ planType, context, previousFeedback: previous_feedback, plan, wrapUp: wrap_up });
 	const start = Date.now();
+
+	if (isAsync) {
+		const job = createReviewJob({
+			planType,
+			iteration: currentIteration,
+			engine: resolvedEngine,
+			model: cfg.model
+		});
+
+		(async () => {
+			try {
+				const { text, engine, model } = await runReview(prompt, {
+					engine: resolvedEngine,
+					caller,
+					extra,
+					config: cfg
+				});
+				const durationMs = Date.now() - start;
+				const verdict = extractVerdict(text);
+				logger.info({
+					event: "review_plan_async_completed",
+					job_id: job.id,
+					engine,
+					apiKeyId,
+					plan_type: planType,
+					iteration,
+					wrap_up: !!wrap_up,
+					charsIn: prompt.length,
+					charsOut: text.length,
+					durationMs,
+					verdict,
+					model
+				});
+				if (cfg.auditLog) {
+					auditLogger.info({
+						event: "review_audit",
+						job_id: job.id,
+						engine,
+						apiKeyId,
+						plan_type: planType,
+						iteration,
+						wrap_up: !!wrap_up,
+						model,
+						durationMs,
+						prompt,
+						response: text
+					});
+				}
+				updateReviewJob(job.id, {
+					status: "completed",
+					result: text,
+					verdict,
+					durationMs,
+					completedAt: Date.now()
+				});
+			} catch (e) {
+				const durationMs = Date.now() - start;
+				logger.warn({
+					event: "review_plan_async_failed",
+					job_id: job.id,
+					engine: resolvedEngine,
+					apiKeyId,
+					plan_type: planType,
+					iteration,
+					wrap_up: !!wrap_up,
+					charsIn: prompt.length,
+					durationMs,
+					code: e.code || "ERROR",
+					model: cfg.model,
+					error: e.message
+				});
+				if (cfg.auditLog) {
+					auditLogger.info({
+						event: "review_audit",
+						job_id: job.id,
+						engine: resolvedEngine,
+						apiKeyId,
+						plan_type: planType,
+						iteration,
+						wrap_up: !!wrap_up,
+						model: cfg.model,
+						durationMs,
+						prompt,
+						response: e.message
+					});
+				}
+				updateReviewJob(job.id, {
+					status: "failed",
+					error: e.message,
+					durationMs,
+					completedAt: Date.now()
+				});
+			}
+		})();
+
+		return {
+			content: [{
+				type: "text",
+				text: `⏳ **Review started in the background.**\n\n` +
+					`- **Job ID:** \`${job.id}\`\n` +
+					`- **Reviewer Engine:** ${resolvedEngine}\n` +
+					`- **Model:** ${cfg.model}\n` +
+					`- **Plan Type:** ${planType}\n` +
+					`- **Iteration:** ${currentIteration}\n\n` +
+					`**Next step:** Wait about 1.5–2 minutes, then call the \`get_review_result\` tool with:\n` +
+					`\`\`\`json\n{\n  "job_id": "${job.id}"\n}\n\`\`\`\n` +
+					`If the review is still running, wait a few moments and call \`get_review_result\` again.`
+			}]
+		};
+	}
 
 	try {
 		const { text, engine, model } = await runReview(prompt, {
