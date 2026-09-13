@@ -1241,5 +1241,27 @@
     "model": "opus",
     "chars": 2880,
     "durationMs": 25474
+  },
+  {
+    "timestamp": 1789335548211,
+    "id": "rev_5449d144ff4c",
+    "type": "audit",
+    "planType": null,
+    "iteration": 1,
+    "engine": "claude",
+    "model": "opus",
+    "chars": 2880,
+    "durationMs": 25268
+  },
+  {
+    "timestamp": 1789335571291,
+    "id": "rev_5d9b99e6becf",
+    "type": "audit",
+    "planType": null,
+    "iteration": 1,
+    "engine": "claude",
+    "model": "opus",
+    "chars": 2880,
+    "durationMs": 25908
   }
 ]

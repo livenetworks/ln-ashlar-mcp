@@ -30,16 +30,16 @@ export const handler = async (args) => {
 	if (job.status === "running") {
 		const elapsedMs = Date.now() - job.createdAt;
 		const elapsedSec = Math.round(elapsedMs / 1000);
-		let waitMessage = "~2.0 minutes";
+		let waitMessage = "60 seconds";
 		if (job.chars) {
-			const estimatedMs = estimateWaitTime(job.chars);
-			const remainingMs = Math.max(60000, estimatedMs - elapsedMs); // at least 1 minute
-			waitMessage = `~${formatDuration(remainingMs)}`;
+			const estimatedMs = estimateWaitTime(job.chars, job.model);
+			const remainingMs = Math.max(60000, estimatedMs - elapsedMs);
+			waitMessage = formatDuration(remainingMs);
 		}
 		return {
 			content: [{
 				type: "text",
-				text: `⏳ Review job \`${job_id}\` is still running (elapsed: ${elapsedSec}s, model: ${job.model || "unknown"}).\nPlease wait ${waitMessage} and call \`get_review_result\` again with \`{"job_id": "${job_id}"}\`.`
+				text: `⏳ Review job \`${job_id}\` is still running (elapsed: ${elapsedSec}s, model: ${job.model || "unknown"}).\nPlease try again in 60 seconds (estimated remaining: ${waitMessage}) by calling \`get_review_result\` with \`{"job_id": "${job_id}"}\`.`
 			}]
 		};
 	}

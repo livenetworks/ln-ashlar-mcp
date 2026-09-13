@@ -348,6 +348,10 @@ app.all(['/', '/mcp'], async (req, res) => {
       const serverInstance = await createMcpServer();
       await serverInstance.connect(transport);
     } else {
+      const isNotification = req.method === 'POST' && req.body && req.body.id === undefined && req.body.method;
+      if (isNotification) {
+        return res.status(202).end();
+      }
       return res.status(400).json({
         jsonrpc: '2.0',
         error: {

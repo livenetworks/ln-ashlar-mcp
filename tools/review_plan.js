@@ -244,7 +244,7 @@ export const handler = async (args, extra) => {
 			}
 		})();
 
-		const waitTimeFormatted = formatDuration(estimateWaitTime(prompt.length));
+		const waitTimeFormatted = formatDuration(estimateWaitTime(prompt.length, cfg.model));
 		return {
 			content: [{
 				type: "text",
