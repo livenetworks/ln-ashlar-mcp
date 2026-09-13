@@ -50,6 +50,9 @@ export const definition = {
 	description:
 		"MANDATORY before finalizing or committing code changes. Submit a code diff or patch to an " +
 		"independent reviewer for critique on correctness, plan conformance, and cleanup (Claude or Gemini/Antigravity). " +
+		"IMPORTANT: Reviewers have read access to the ln-ashlar design system " +
+		"but NOT to your project workspace. Pass relevant source files in " +
+		"`project_files` so reviewers can verify the diff against the actual codebase. " +
 		"Stateless — YOU drive the loop. " +
 		"Protocol: (1) call with your `diff` and optional `context` (the architecture/implementation plan or task requirements); " +
 		"(2) read the returned critique (a Verdict of APPROVE or REVISE, plus categorized issues under correctness, conformance, cleanup); " +
@@ -62,6 +65,16 @@ export const definition = {
 	inputSchema: {
 		diff: z.string().min(1).describe("The code diff, patch, or modified code to be reviewed"),
 		context: z.string().optional().describe("Task requirements, architecture plan, or acceptance criteria to judge conformance against"),
+		project_files: z.string().optional().describe(
+			"STRONGLY RECOMMENDED. Source code of files referenced or modified by the diff, " +
+			"concatenated with clear path headers. The reviewers have access to the ln-ashlar " +
+			"design system but NOT to your project — these are the only project files they " +
+			"can see. Format each file as:\n" +
+			"```\n=== path/to/file.scss (lines 50-120) ===\n<file contents>\n```\n" +
+			"Include: (1) every file the diff modifies (BEFORE state), " +
+			"(2) files referenced for context (imports, related components). " +
+			"Omit unchanged boilerplate."
+		),
 		previous_feedback: z.string().optional().describe("The critique received on the previous iteration, when revising"),
 		iteration: z.number().int().min(1).optional().describe("Current iteration number; server rejects values above the configured max (default 3)"),
 		reviewer: z
@@ -80,7 +93,7 @@ export const definition = {
 };
 
 export const handler = async (args, extra) => {
-	const { diff, context, previous_feedback, iteration, wrap_up, reviewer, caller } = args;
+	const { diff, context, project_files, previous_feedback, iteration, wrap_up, reviewer, caller } = args;
 	const apiKeyId = extra?.authInfo?.clientId ?? "unknown";
 
 	const resolvedEngine = detectReviewerEngine({
@@ -104,7 +117,7 @@ export const handler = async (args, extra) => {
 		};
 	}
 
-	const prompt = buildCodeReviewPrompt({ diff, context, previousFeedback: previous_feedback, wrapUp: wrap_up });
+	const prompt = buildCodeReviewPrompt({ diff, context, projectFiles: project_files, previousFeedback: previous_feedback, wrapUp: wrap_up });
 	const start = Date.now();
 
 	try {

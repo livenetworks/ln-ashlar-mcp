@@ -170,3 +170,11 @@ With no args, lints the configured roots (`DOCS_CORPUS_ROOTS` / legacy
 `ASHLAR_DOCS_REPO`). Args, when given, override env config. Exit codes:
 `0` clean, `1` findings present, `2` no corpus configured. Also exposed as
 the npm script `npm run lint:docs`.
+
+### RAG Search
+RAG is supported for semantic search via `@huggingface/transformers` (v3). 
+Controlled by the `RAG_ENABLED` environment variable:
+- Unset: Auto-detects dependencies.
+- `1`: Fails if dependencies are missing.
+- `0`: Hard off, degrades to purely lexical fuzzy search.
+The RAG chunker splits documents based on token limit (< 300 tokens) using the tokenizer.

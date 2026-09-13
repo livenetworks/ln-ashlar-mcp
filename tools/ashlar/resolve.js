@@ -20,7 +20,14 @@ export function findByName(index, name, domain) {
   let candidates = keys.map((k) => index.docs.get(k)).filter(Boolean);
   if (domain) candidates = candidates.filter((d) => d.domain === domain);
 
-  if (candidates.length === 0) return { status: 'notfound' };
+  if (candidates.length === 0) {
+    // Agents predictably prepend "ln-" to CSS-only doc names (e.g. "ln-timeline"
+    // when the doc is indexed as "timeline"). Retry with the prefix stripped.
+    if (name.startsWith("ln-")) {
+      return findByName(index, name.slice(3), domain);
+    }
+    return { status: 'notfound' };
+  }
   if (candidates.length === 1) return { status: 'unique', doc: candidates[0] };
   return { status: 'ambiguous', matches: candidates };
 }

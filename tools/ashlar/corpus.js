@@ -20,6 +20,7 @@ const SKILL_CONTEXTS = ['app', 'web', 'wordpress'];
 // ./router-contract.js; re-exported here so existing importers keep working.
 export { ROUTER_FILENAME } from './router-contract.js';
 import { ROUTER_FILENAME } from './router-contract.js';
+import { ensureRagIndex } from './rag/search.js';
 
 let cachedIndex = null;
 let cachedRootsKey = null;
@@ -330,10 +331,11 @@ export function buildIndex(rootPaths) {
 
       markupIndex.set(key, parsed.markup);
 
-      for (const section of parsed.sections) {
-        sectionUnits.push({ key, doc: name, heading: section.title, text: section.text });
+      for (let i = 0; i < parsed.sections.length; i++) {
+        const section = parsed.sections[i];
+        sectionUnits.push({ key, doc: name, heading: section.title, text: section.text, sectionIdx: i });
       }
-      sectionUnits.push({ key, doc: name, heading: '(summary)', text: docEntry.summary });
+      sectionUnits.push({ key, doc: name, heading: '(summary)', text: docEntry.summary, sectionIdx: -1 });
     }
 
     for (const folder of NON_SKILL_FOLDERS) {
@@ -449,6 +451,11 @@ export function buildIndex(rootPaths) {
     minMatchCharLength: 2
   });
 
+  const sectionUnitsMap = new Map();
+  for (const u of sectionUnits) {
+    sectionUnitsMap.set(`${u.key}:${u.sectionIdx}`, u);
+  }
+
   return {
     roots: rootMeta,
     builtAt: Date.now(),
@@ -463,9 +470,11 @@ export function buildIndex(rootPaths) {
     markupIndex,
     linkGraph,
     fuse,
-    sectionUnits
+    sectionUnits,
+    sectionUnitsMap
   };
 }
+
 
 /**
  * Build the index on first call; on later calls, re-read every configured
@@ -501,8 +510,16 @@ export async function ensureIndex() {
   }
 
   const built = buildIndex(roots);
+  built.indexEpoch = currentSignature;
+  
   cachedIndex = built;
   cachedRootsKey = rootsKey;
   cachedSignature = currentSignature;
+  
+  // Trigger RAG index asynchronously
+  ensureRagIndex(roots, currentSignature).catch(err => {
+    console.error('RAG Worker Error:', err);
+  });
+  
   return built;
 }

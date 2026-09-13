@@ -157,6 +157,11 @@ MCP tool (`tools/review_plan.js`) that sends a plan (architectural or implementa
 
 MCP tool (`tools/review_code.js`) that sends a code diff or patch to an independent AI reviewer via `claude-cli` or `gemini-cli` with the same cross-review routing as `review_plan`. Evaluates code changes against three core criteria: **Correctness** (bugs, edge cases, logic, security), **Plan & Spec Conformance** (adherence to the architecture/plan and doctrines), and **Cleanup & Quality** (dead code, naming, abstractions). The tool is stateless and follows the same 3-iteration review loop, with parameters `diff`, `context` (intended plan / criteria), `previous_feedback`, `iteration`, `reviewer`, `caller`, and `wrap_up`. Outputs a categorized issue list with no irrelevant progress sections.
 
+### review_audit
+
+MCP tool (`tools/review_audit.js`) that submits a component audit report for independent forensic verification against JS, SCSS, README, schema, and `ln-ashlar` `DOCTRINE.md`. Evaluates audit reports against four forensic criteria: **Factual Accuracy** (verifying audit claims against source JS/SCSS), **Omitted Findings** (missed doctrine violations, dead code, SCSS duplicates, leaks, doc-drift), **False Findings** (inaccurate audit claims), and **Doctrinal Purity** (ensuring the audit reports findings without proposing fixes or turning into an implementation plan). Supports the same 3-iteration loop, async execution, `wrap_up`, and cross-review routing as `review_plan` and `review_code`.
+
+
 ## User Management
 
 Users are loaded from `config/auth.json` via `middleware/user-store.js`, which caches the parsed file and automatically reloads it when the file's `mtime` changes. This means: adding/deleting a user in `config/auth.json` takes effect immediately, WITHOUT restarting the server (applies to `/authorize`, `/token`, and MCP authentication via `middleware/auth.js`).

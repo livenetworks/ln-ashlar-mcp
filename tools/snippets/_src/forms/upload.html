@@ -3,10 +3,10 @@
 <div class="ln-upload" id="{{id}}" data-ln-upload="{{action_url}}" data-ln-upload-accept="{{accept}}"{{delete_attr}}>
 	<!-- DICT_SLOT -->
 	<input type="file" id="{{id}}-input" name="{{name}}" class="ln-upload-input" accept="{{accept}}"{{multiple_attr}}{{required_attr}}>
-	<label for="{{id}}-input" class="ln-upload__zone">
+	<label for="{{id}}-input" class="ln-upload__zone" data-ln-upload-zone>
 		<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-cloud-upload"></use></svg>
 		<span class="ln-upload-text">Повлечете фајл тука или <strong>прелистајте</strong></span>
 		<span class="ln-upload-hint">{{hint}}</span>
 	</label>
-	<ul class="ln-upload__list"></ul>
+	<ul class="ln-upload__list" data-ln-upload-list></ul>
 </div>

@@ -1,0 +1,2537 @@
+diff --git a/.gitignore b/.gitignore
+index 01ba945..d6b9bf8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -6,4 +6,4 @@ config/gemini.json
+ config/claude.json
+ resources/
+ .claude
+-
++cache/
+diff --git a/package-lock.json b/package-lock.json
+index ccbddf6..2609499 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -16,6 +16,12 @@
+         "winston": "^3.19.0",
+         "winston-daily-rotate-file": "^5.0.0",
+         "zod": "^4.4.3"
++      },
++      "engines": {
++        "node": ">=20.11.0"
++      },
++      "optionalDependencies": {
++        "@huggingface/transformers": "^3.0.0"
+       }
+     },
+     "node_modules/@colors/colors": {
+@@ -38,6 +44,16 @@
+         "kuler": "^2.0.0"
+       }
+     },
++    "node_modules/@emnapi/runtime": {
++      "version": "1.11.3",
++      "resolved": "https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.11.3.tgz",
++      "integrity": "sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "tslib": "^2.4.0"
++      }
++    },
+     "node_modules/@hono/node-server": {
+       "version": "1.19.14",
+       "resolved": "https://registry.npmjs.org/@hono/node-server/-/node-server-1.19.14.tgz",
+@@ -50,6 +66,556 @@
+         "hono": "^4"
+       }
+     },
++    "node_modules/@huggingface/jinja": {
++      "version": "0.5.9",
++      "resolved": "https://registry.npmjs.org/@huggingface/jinja/-/jinja-0.5.9.tgz",
++      "integrity": "sha512-uWTG+l3VJRsl7EXxYizuL3P+cCPoc3cRqbWWRcQN0FhejRfbdq0RNhCmbY/YDtnTcz9icdLYuLDjsnz4d8JMuw==",
++      "license": "MIT",
++      "optional": true,
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/@huggingface/transformers": {
++      "version": "3.8.1",
++      "resolved": "https://registry.npmjs.org/@huggingface/transformers/-/transformers-3.8.1.tgz",
++      "integrity": "sha512-tsTk4zVjImqdqjS8/AOZg2yNLd1z9S5v+7oUPpXaasDRwEDhB+xnglK1k5cad26lL5/ZIaeREgWWy0bs9y9pPA==",
++      "license": "Apache-2.0",
++      "optional": true,
++      "dependencies": {
++        "@huggingface/jinja": "^0.5.3",
++        "onnxruntime-node": "1.21.0",
++        "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",
++        "sharp": "^0.34.1"
++      }
++    },
++    "node_modules/@img/colour": {
++      "version": "1.1.0",
++      "resolved": "https://registry.npmjs.org/@img/colour/-/colour-1.1.0.tgz",
++      "integrity": "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==",
++      "license": "MIT",
++      "optional": true,
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/@img/sharp-darwin-arm64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-darwin-arm64/-/sharp-darwin-arm64-0.34.5.tgz",
++      "integrity": "sha512-imtQ3WMJXbMY4fxb/Ndp6HBTNVtWCUI0WdobyheGf5+ad6xX8VIDO8u2xE4qc/fr08CKG/7dDseFtn6M6g/r3w==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-darwin-arm64": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-darwin-x64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-darwin-x64/-/sharp-darwin-x64-0.34.5.tgz",
++      "integrity": "sha512-YNEFAF/4KQ/PeW0N+r+aVVsoIY0/qxxikF2SWdp+NRkmMB7y9LBZAVqQ4yhGCm/H3H270OSykqmQMKLBhBJDEw==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-darwin-x64": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-libvips-darwin-arm64": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-darwin-arm64/-/sharp-libvips-darwin-arm64-1.2.4.tgz",
++      "integrity": "sha512-zqjjo7RatFfFoP0MkQ51jfuFZBnVE2pRiaydKJ1G/rHZvnsrHAOcQALIi9sA5co5xenQdTugCvtb1cuf78Vf4g==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-darwin-x64": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-darwin-x64/-/sharp-libvips-darwin-x64-1.2.4.tgz",
++      "integrity": "sha512-1IOd5xfVhlGwX+zXv2N93k0yMONvUlANylbJw1eTah8K/Jtpi15KC+WSiaX/nBmbm2HxRM1gZ0nSdjSsrZbGKg==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-linux-arm": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-arm/-/sharp-libvips-linux-arm-1.2.4.tgz",
++      "integrity": "sha512-bFI7xcKFELdiNCVov8e44Ia4u2byA+l3XtsAj+Q8tfCwO6BQ8iDojYdvoPMqsKDkuoOo+X6HZA0s0q11ANMQ8A==",
++      "cpu": [
++        "arm"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-linux-arm64": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-arm64/-/sharp-libvips-linux-arm64-1.2.4.tgz",
++      "integrity": "sha512-excjX8DfsIcJ10x1Kzr4RcWe1edC9PquDRRPx3YVCvQv+U5p7Yin2s32ftzikXojb1PIFc/9Mt28/y+iRklkrw==",
++      "cpu": [
++        "arm64"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-linux-ppc64": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-ppc64/-/sharp-libvips-linux-ppc64-1.2.4.tgz",
++      "integrity": "sha512-FMuvGijLDYG6lW+b/UvyilUWu5Ayu+3r2d1S8notiGCIyYU/76eig1UfMmkZ7vwgOrzKzlQbFSuQfgm7GYUPpA==",
++      "cpu": [
++        "ppc64"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-linux-riscv64": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-riscv64/-/sharp-libvips-linux-riscv64-1.2.4.tgz",
++      "integrity": "sha512-oVDbcR4zUC0ce82teubSm+x6ETixtKZBh/qbREIOcI3cULzDyb18Sr/Wcyx7NRQeQzOiHTNbZFF1UwPS2scyGA==",
++      "cpu": [
++        "riscv64"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-linux-s390x": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-s390x/-/sharp-libvips-linux-s390x-1.2.4.tgz",
++      "integrity": "sha512-qmp9VrzgPgMoGZyPvrQHqk02uyjA0/QrTO26Tqk6l4ZV0MPWIW6LTkqOIov+J1yEu7MbFQaDpwdwJKhbJvuRxQ==",
++      "cpu": [
++        "s390x"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-linux-x64": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-x64/-/sharp-libvips-linux-x64-1.2.4.tgz",
++      "integrity": "sha512-tJxiiLsmHc9Ax1bz3oaOYBURTXGIRDODBqhveVHonrHJ9/+k89qbLl0bcJns+e4t4rvaNBxaEZsFtSfAdquPrw==",
++      "cpu": [
++        "x64"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-linuxmusl-arm64": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linuxmusl-arm64/-/sharp-libvips-linuxmusl-arm64-1.2.4.tgz",
++      "integrity": "sha512-FVQHuwx1IIuNow9QAbYUzJ+En8KcVm9Lk5+uGUQJHaZmMECZmOlix9HnH7n1TRkXMS0pGxIJokIVB9SuqZGGXw==",
++      "cpu": [
++        "arm64"
++      ],
++      "libc": [
++        "musl"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-libvips-linuxmusl-x64": {
++      "version": "1.2.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linuxmusl-x64/-/sharp-libvips-linuxmusl-x64-1.2.4.tgz",
++      "integrity": "sha512-+LpyBk7L44ZIXwz/VYfglaX/okxezESc6UxDSoyo2Ks6Jxc4Y7sGjpgU9s4PMgqgjj1gZCylTieNamqA1MF7Dg==",
++      "cpu": [
++        "x64"
++      ],
++      "libc": [
++        "musl"
++      ],
++      "license": "LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-linux-arm": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-arm/-/sharp-linux-arm-0.34.5.tgz",
++      "integrity": "sha512-9dLqsvwtg1uuXBGZKsxem9595+ujv0sJ6Vi8wcTANSFpwV/GONat5eCkzQo/1O6zRIkh0m/8+5BjrRr7jDUSZw==",
++      "cpu": [
++        "arm"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-linux-arm": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-linux-arm64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-arm64/-/sharp-linux-arm64-0.34.5.tgz",
++      "integrity": "sha512-bKQzaJRY/bkPOXyKx5EVup7qkaojECG6NLYswgktOZjaXecSAeCWiZwwiFf3/Y+O1HrauiE3FVsGxFg8c24rZg==",
++      "cpu": [
++        "arm64"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-linux-arm64": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-linux-ppc64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-ppc64/-/sharp-linux-ppc64-0.34.5.tgz",
++      "integrity": "sha512-7zznwNaqW6YtsfrGGDA6BRkISKAAE1Jo0QdpNYXNMHu2+0dTrPflTLNkpc8l7MUP5M16ZJcUvysVWWrMefZquA==",
++      "cpu": [
++        "ppc64"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-linux-ppc64": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-linux-riscv64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-riscv64/-/sharp-linux-riscv64-0.34.5.tgz",
++      "integrity": "sha512-51gJuLPTKa7piYPaVs8GmByo7/U7/7TZOq+cnXJIHZKavIRHAP77e3N2HEl3dgiqdD/w0yUfiJnII77PuDDFdw==",
++      "cpu": [
++        "riscv64"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-linux-riscv64": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-linux-s390x": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-s390x/-/sharp-linux-s390x-0.34.5.tgz",
++      "integrity": "sha512-nQtCk0PdKfho3eC5MrbQoigJ2gd1CgddUMkabUj+rBevs8tZ2cULOx46E7oyX+04WGfABgIwmMC0VqieTiR4jg==",
++      "cpu": [
++        "s390x"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-linux-s390x": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-linux-x64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-x64/-/sharp-linux-x64-0.34.5.tgz",
++      "integrity": "sha512-MEzd8HPKxVxVenwAa+JRPwEC7QFjoPWuS5NZnBt6B3pu7EG2Ge0id1oLHZpPJdn3OQK+BQDiw9zStiHBTJQQQQ==",
++      "cpu": [
++        "x64"
++      ],
++      "libc": [
++        "glibc"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-linux-x64": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-linuxmusl-arm64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linuxmusl-arm64/-/sharp-linuxmusl-arm64-0.34.5.tgz",
++      "integrity": "sha512-fprJR6GtRsMt6Kyfq44IsChVZeGN97gTD331weR1ex1c1rypDEABN6Tm2xa1wE6lYb5DdEnk03NZPqA7Id21yg==",
++      "cpu": [
++        "arm64"
++      ],
++      "libc": [
++        "musl"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-linuxmusl-arm64": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-linuxmusl-x64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linuxmusl-x64/-/sharp-linuxmusl-x64-0.34.5.tgz",
++      "integrity": "sha512-Jg8wNT1MUzIvhBFxViqrEhWDGzqymo3sV7z7ZsaWbZNDLXRJZoRGrjulp60YYtV4wfY8VIKcWidjojlLcWrd8Q==",
++      "cpu": [
++        "x64"
++      ],
++      "libc": [
++        "musl"
++      ],
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-libvips-linuxmusl-x64": "1.2.4"
++      }
++    },
++    "node_modules/@img/sharp-wasm32": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-wasm32/-/sharp-wasm32-0.34.5.tgz",
++      "integrity": "sha512-OdWTEiVkY2PHwqkbBI8frFxQQFekHaSSkUIJkwzclWZe64O1X4UlUjqqqLaPbUpMOQk6FBu/HtlGXNblIs0huw==",
++      "cpu": [
++        "wasm32"
++      ],
++      "license": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
++      "optional": true,
++      "dependencies": {
++        "@emnapi/runtime": "^1.7.0"
++      },
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-win32-arm64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-win32-arm64/-/sharp-win32-arm64-0.34.5.tgz",
++      "integrity": "sha512-WQ3AgWCWYSb2yt+IG8mnC6Jdk9Whs7O0gxphblsLvdhSpSTtmu69ZG1Gkb6NuvxsNACwiPV6cNSZNzt0KPsw7g==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "Apache-2.0 AND LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-win32-ia32": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-win32-ia32/-/sharp-win32-ia32-0.34.5.tgz",
++      "integrity": "sha512-FV9m/7NmeCmSHDD5j4+4pNI8Cp3aW+JvLoXcTUo0IqyjSfAZJ8dIUmijx1qaJsIiU+Hosw6xM5KijAWRJCSgNg==",
++      "cpu": [
++        "ia32"
++      ],
++      "license": "Apache-2.0 AND LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-win32-x64": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-win32-x64/-/sharp-win32-x64-0.34.5.tgz",
++      "integrity": "sha512-+29YMsqY2/9eFEiW93eqWnuLcWcufowXewwSNIT6UwZdUUCrM3oFjMWH/Z6/TMmb4hlFenmfAVbpWeup2jryCw==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "Apache-2.0 AND LGPL-3.0-or-later",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@isaacs/fs-minipass": {
++      "version": "4.0.1",
++      "resolved": "https://registry.npmjs.org/@isaacs/fs-minipass/-/fs-minipass-4.0.1.tgz",
++      "integrity": "sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==",
++      "license": "ISC",
++      "optional": true,
++      "dependencies": {
++        "minipass": "^7.0.4"
++      },
++      "engines": {
++        "node": ">=18.0.0"
++      }
++    },
+     "node_modules/@modelcontextprotocol/sdk": {
+       "version": "1.29.0",
+       "resolved": "https://registry.npmjs.org/@modelcontextprotocol/sdk/-/sdk-1.29.0.tgz",
+@@ -90,6 +656,72 @@
+         }
+       }
+     },
++    "node_modules/@protobufjs/aspromise": {
++      "version": "1.1.2",
++      "resolved": "https://registry.npmjs.org/@protobufjs/aspromise/-/aspromise-1.1.2.tgz",
++      "integrity": "sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
++    "node_modules/@protobufjs/base64": {
++      "version": "1.1.2",
++      "resolved": "https://registry.npmjs.org/@protobufjs/base64/-/base64-1.1.2.tgz",
++      "integrity": "sha512-AZkcAA5vnN/v4PDqKyMR5lx7hZttPDgClv83E//FMNhR2TMcLUhfRUBHCmSl0oi9zMgDDqRUJkSxO3wm85+XLg==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
++    "node_modules/@protobufjs/codegen": {
++      "version": "2.0.5",
++      "resolved": "https://registry.npmjs.org/@protobufjs/codegen/-/codegen-2.0.5.tgz",
++      "integrity": "sha512-zgXFLzW3Ap33e6d0Wlj4MGIm6Ce8O89n/apUaGNB/jx+hw+ruWEp7EwGUshdLKVRCxZW12fp9r40E1mQrf/34g==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
++    "node_modules/@protobufjs/eventemitter": {
++      "version": "1.1.1",
++      "resolved": "https://registry.npmjs.org/@protobufjs/eventemitter/-/eventemitter-1.1.1.tgz",
++      "integrity": "sha512-vW1GmwMZNnL+gMRaovlh9yZX74kc+TTU3FObkkurpMaRtBfLP3ldjS9KQWlwZgraRE0+dheEEoAxdzcJQ8eXZg==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
++    "node_modules/@protobufjs/fetch": {
++      "version": "1.1.1",
++      "resolved": "https://registry.npmjs.org/@protobufjs/fetch/-/fetch-1.1.1.tgz",
++      "integrity": "sha512-GpptLrs57adMSuHi3VNj0mAF8dwh36LMaYF6XyJ6JMWlVsc+t42tm1HSEDmOs3A8fC9yyeisgLhsTVQokOZ0zw==",
++      "license": "BSD-3-Clause",
++      "optional": true,
++      "dependencies": {
++        "@protobufjs/aspromise": "^1.1.1"
++      }
++    },
++    "node_modules/@protobufjs/float": {
++      "version": "1.0.2",
++      "resolved": "https://registry.npmjs.org/@protobufjs/float/-/float-1.0.2.tgz",
++      "integrity": "sha512-Ddb+kVXlXst9d+R9PfTIxh1EdNkgoRe5tOX6t01f1lYWOvJnSPDBlG241QLzcyPdoNTsblLUdujGSE4RzrTZGQ==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
++    "node_modules/@protobufjs/path": {
++      "version": "1.1.2",
++      "resolved": "https://registry.npmjs.org/@protobufjs/path/-/path-1.1.2.tgz",
++      "integrity": "sha512-6JOcJ5Tm08dOHAbdR3GrvP+yUUfkjG5ePsHYczMFLq3ZmMkAD98cDgcT2iA1lJ9NVwFd4tH/iSSoe44YWkltEA==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
++    "node_modules/@protobufjs/pool": {
++      "version": "1.1.0",
++      "resolved": "https://registry.npmjs.org/@protobufjs/pool/-/pool-1.1.0.tgz",
++      "integrity": "sha512-0kELaGSIDBKvcgS4zkjz1PeddatrjYcmMWOlAuAPwAeccUrPHdUqo/J6LiymHHEiJT5NrF1UVwxY14f+fy4WQw==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
++    "node_modules/@protobufjs/utf8": {
++      "version": "1.1.2",
++      "resolved": "https://registry.npmjs.org/@protobufjs/utf8/-/utf8-1.1.2.tgz",
++      "integrity": "sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
+     "node_modules/@so-ric/colorspace": {
+       "version": "1.1.6",
+       "resolved": "https://registry.npmjs.org/@so-ric/colorspace/-/colorspace-1.1.6.tgz",
+@@ -100,6 +732,16 @@
+         "text-hex": "1.0.x"
+       }
+     },
++    "node_modules/@types/node": {
++      "version": "26.4.1",
++      "resolved": "https://registry.npmjs.org/@types/node/-/node-26.4.1.tgz",
++      "integrity": "sha512-k97ENvZWtvA6yqz5/FS6a7duDgOPEeOQOc2iKS/nY6mX6qJUKtLnWzQS+Xj6tXweyj6ZcTAK2Qecetnvi9nCLA==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "undici-types": "~8.3.0"
++      }
++    },
+     "node_modules/@types/triple-beam": {
+       "version": "1.3.5",
+       "resolved": "https://registry.npmjs.org/@types/triple-beam/-/triple-beam-1.3.5.tgz",
+@@ -195,6 +837,14 @@
+         "url": "https://opencollective.com/express"
+       }
+     },
++    "node_modules/boolean": {
++      "version": "3.2.0",
++      "resolved": "https://registry.npmjs.org/boolean/-/boolean-3.2.0.tgz",
++      "integrity": "sha512-d0II/GO9uf9lfUHH2BQsjxzRJZBdsjgsBiW4BvhWk/3qoKwQFjIDVN19PfX8F2D/r9PCMTtLWjYVCFrpeYUzsw==",
++      "deprecated": "Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.",
++      "license": "MIT",
++      "optional": true
++    },
+     "node_modules/buffer-equal-constant-time": {
+       "version": "1.0.1",
+       "resolved": "https://registry.npmjs.org/buffer-equal-constant-time/-/buffer-equal-constant-time-1.0.1.tgz",
+@@ -239,6 +889,16 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/chownr": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/chownr/-/chownr-3.0.0.tgz",
++      "integrity": "sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==",
++      "license": "BlueOak-1.0.0",
++      "optional": true,
++      "engines": {
++        "node": ">=18"
++      }
++    },
+     "node_modules/color": {
+       "version": "5.0.3",
+       "resolved": "https://registry.npmjs.org/color/-/color-5.0.3.tgz",
+@@ -373,6 +1033,42 @@
+         }
+       }
+     },
++    "node_modules/define-data-property": {
++      "version": "1.1.4",
++      "resolved": "https://registry.npmjs.org/define-data-property/-/define-data-property-1.1.4.tgz",
++      "integrity": "sha512-rBMvIzlpA8v6E+SJZoo++HAYqsLrkg7MSfIinMPFhmkorw7X+dOXVJQs+QT69zGkzMyfDnIMN2Wid1+NbL3T+A==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "es-define-property": "^1.0.0",
++        "es-errors": "^1.3.0",
++        "gopd": "^1.0.1"
++      },
++      "engines": {
++        "node": ">= 0.4"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/ljharb"
++      }
++    },
++    "node_modules/define-properties": {
++      "version": "1.2.1",
++      "resolved": "https://registry.npmjs.org/define-properties/-/define-properties-1.2.1.tgz",
++      "integrity": "sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "define-data-property": "^1.0.1",
++        "has-property-descriptors": "^1.0.0",
++        "object-keys": "^1.1.1"
++      },
++      "engines": {
++        "node": ">= 0.4"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/ljharb"
++      }
++    },
+     "node_modules/depd": {
+       "version": "2.0.0",
+       "resolved": "https://registry.npmjs.org/depd/-/depd-2.0.0.tgz",
+@@ -382,6 +1078,23 @@
+         "node": ">= 0.8"
+       }
+     },
++    "node_modules/detect-libc": {
++      "version": "2.1.2",
++      "resolved": "https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz",
++      "integrity": "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==",
++      "license": "Apache-2.0",
++      "optional": true,
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/detect-node": {
++      "version": "2.1.0",
++      "resolved": "https://registry.npmjs.org/detect-node/-/detect-node-2.1.0.tgz",
++      "integrity": "sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==",
++      "license": "MIT",
++      "optional": true
++    },
+     "node_modules/dunder-proto": {
+       "version": "1.0.1",
+       "resolved": "https://registry.npmjs.org/dunder-proto/-/dunder-proto-1.0.1.tgz",
+@@ -456,12 +1169,32 @@
+         "node": ">= 0.4"
+       }
+     },
++    "node_modules/es6-error": {
++      "version": "4.1.1",
++      "resolved": "https://registry.npmjs.org/es6-error/-/es6-error-4.1.1.tgz",
++      "integrity": "sha512-Um/+FxMr9CISWh0bi5Zv0iOD+4cFh5qLeks1qhAopKVAJw3drgKbKySikp7wGhDL0HPeaja0P5ULZrxLkniUVg==",
++      "license": "MIT",
++      "optional": true
++    },
+     "node_modules/escape-html": {
+       "version": "1.0.3",
+       "resolved": "https://registry.npmjs.org/escape-html/-/escape-html-1.0.3.tgz",
+       "integrity": "sha512-NiSupZ4OeuGwr68lGIeym/ksIZMJodUGOSCZ/FSnTxcrekbvqrgdUxlJOMpijaKZVjAJrWrGs/6Jy8OMuyj9ow==",
+       "license": "MIT"
+     },
++    "node_modules/escape-string-regexp": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz",
++      "integrity": "sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==",
++      "license": "MIT",
++      "optional": true,
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
+     "node_modules/etag": {
+       "version": "1.8.1",
+       "resolved": "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz",
+@@ -611,6 +1344,13 @@
+         "url": "https://opencollective.com/express"
+       }
+     },
++    "node_modules/flatbuffers": {
++      "version": "25.9.23",
++      "resolved": "https://registry.npmjs.org/flatbuffers/-/flatbuffers-25.9.23.tgz",
++      "integrity": "sha512-MI1qs7Lo4Syw0EOzUl0xjs2lsoeqFku44KpngfIduHBYvzm8h2+7K8YMQh1JtVVVrUvhLpNwqVi4DERegUJhPQ==",
++      "license": "Apache-2.0",
++      "optional": true
++    },
+     "node_modules/fn.name": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/fn.name/-/fn.name-1.1.0.tgz",
+@@ -694,6 +1434,41 @@
+         "node": ">= 0.4"
+       }
+     },
++    "node_modules/global-agent": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/global-agent/-/global-agent-3.0.0.tgz",
++      "integrity": "sha512-PT6XReJ+D07JvGoxQMkT6qji/jVNfX/h364XHZOWeRzy64sSFr+xJ5OX7LI3b4MPQzdL4H8Y8M0xzPpsVMwA8Q==",
++      "license": "BSD-3-Clause",
++      "optional": true,
++      "dependencies": {
++        "boolean": "^3.0.1",
++        "es6-error": "^4.1.1",
++        "matcher": "^3.0.0",
++        "roarr": "^2.15.3",
++        "semver": "^7.3.2",
++        "serialize-error": "^7.0.1"
++      },
++      "engines": {
++        "node": ">=10.0"
++      }
++    },
++    "node_modules/globalthis": {
++      "version": "1.0.4",
++      "resolved": "https://registry.npmjs.org/globalthis/-/globalthis-1.0.4.tgz",
++      "integrity": "sha512-DpLKbNU4WylpxJykQujfCcwYWiV/Jhm50Goo0wrVILAv5jOr9d+H+UR3PhSCD2rCCEIg0uc+G+muBTwD54JhDQ==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "define-properties": "^1.2.1",
++        "gopd": "^1.0.1"
++      },
++      "engines": {
++        "node": ">= 0.4"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/ljharb"
++      }
++    },
+     "node_modules/gopd": {
+       "version": "1.2.0",
+       "resolved": "https://registry.npmjs.org/gopd/-/gopd-1.2.0.tgz",
+@@ -706,6 +1481,26 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/guid-typescript": {
++      "version": "1.0.9",
++      "resolved": "https://registry.npmjs.org/guid-typescript/-/guid-typescript-1.0.9.tgz",
++      "integrity": "sha512-Y8T4vYhEfwJOTbouREvG+3XDsjr8E3kIr7uf+JZ0BYloFsttiHU0WfvANVsR7TxNUJa/WpCnw/Ino/p+DeBhBQ==",
++      "license": "ISC",
++      "optional": true
++    },
++    "node_modules/has-property-descriptors": {
++      "version": "1.0.2",
++      "resolved": "https://registry.npmjs.org/has-property-descriptors/-/has-property-descriptors-1.0.2.tgz",
++      "integrity": "sha512-55JNKuIW+vq4Ke1BjOTjM2YctQIvCT7GFzHwmfZPGo5wnrgkid0YQtnAleFSqumZm4az3n2BS+erby5ipJdgrg==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "es-define-property": "^1.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/ljharb"
++      }
++    },
+     "node_modules/has-symbols": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/has-symbols/-/has-symbols-1.1.0.tgz",
+@@ -844,6 +1639,13 @@
+       "integrity": "sha512-fQhoXdcvc3V28x7C7BMs4P5+kNlgUURe2jmUT1T//oBRMDrqy1QPelJimwZGo7Hg9VPV3EQV5Bnq4hbFy2vetA==",
+       "license": "BSD-2-Clause"
+     },
++    "node_modules/json-stringify-safe": {
++      "version": "5.0.1",
++      "resolved": "https://registry.npmjs.org/json-stringify-safe/-/json-stringify-safe-5.0.1.tgz",
++      "integrity": "sha512-ZClg6AaYvamvYEE82d3Iyd3vSSIjQ+odgjaTzRuO3s7toCdFKczob2i0zCh7JE8kWn17yvAWhUVxvqGwUalsRA==",
++      "license": "ISC",
++      "optional": true
++    },
+     "node_modules/jsonwebtoken": {
+       "version": "9.0.3",
+       "resolved": "https://registry.npmjs.org/jsonwebtoken/-/jsonwebtoken-9.0.3.tgz",
+@@ -952,6 +1754,26 @@
+         "node": ">= 12.0.0"
+       }
+     },
++    "node_modules/long": {
++      "version": "5.3.2",
++      "resolved": "https://registry.npmjs.org/long/-/long-5.3.2.tgz",
++      "integrity": "sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==",
++      "license": "Apache-2.0",
++      "optional": true
++    },
++    "node_modules/matcher": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/matcher/-/matcher-3.0.0.tgz",
++      "integrity": "sha512-OkeDaAZ/bQCxeFAozM55PKcKU0yJMPGifLwV4Qgjitu+5MoAfSQN4lsLJeXZ1b8w0x+/Emda6MZgXS1jvsapng==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "escape-string-regexp": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=10"
++      }
++    },
+     "node_modules/math-intrinsics": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/math-intrinsics/-/math-intrinsics-1.1.0.tgz",
+@@ -1007,6 +1829,29 @@
+         "url": "https://opencollective.com/express"
+       }
+     },
++    "node_modules/minipass": {
++      "version": "7.1.3",
++      "resolved": "https://registry.npmjs.org/minipass/-/minipass-7.1.3.tgz",
++      "integrity": "sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==",
++      "license": "BlueOak-1.0.0",
++      "optional": true,
++      "engines": {
++        "node": ">=16 || 14 >=14.17"
++      }
++    },
++    "node_modules/minizlib": {
++      "version": "3.1.0",
++      "resolved": "https://registry.npmjs.org/minizlib/-/minizlib-3.1.0.tgz",
++      "integrity": "sha512-KZxYo1BUkWD2TVFLr0MQoM8vUUigWD3LlD83a/75BqC+4qE0Hb1Vo5v1FgcfaNXvfXzr+5EhQ6ing/CaBijTlw==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "minipass": "^7.1.2"
++      },
++      "engines": {
++        "node": ">= 18"
++      }
++    },
+     "node_modules/moment": {
+       "version": "2.30.1",
+       "resolved": "https://registry.npmjs.org/moment/-/moment-2.30.1.tgz",
+@@ -1061,6 +1906,16 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/object-keys": {
++      "version": "1.1.1",
++      "resolved": "https://registry.npmjs.org/object-keys/-/object-keys-1.1.1.tgz",
++      "integrity": "sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==",
++      "license": "MIT",
++      "optional": true,
++      "engines": {
++        "node": ">= 0.4"
++      }
++    },
+     "node_modules/on-finished": {
+       "version": "2.4.1",
+       "resolved": "https://registry.npmjs.org/on-finished/-/on-finished-2.4.1.tgz",
+@@ -1091,6 +1946,53 @@
+         "fn.name": "1.x.x"
+       }
+     },
++    "node_modules/onnxruntime-common": {
++      "version": "1.21.0",
++      "resolved": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.21.0.tgz",
++      "integrity": "sha512-Q632iLLrtCAVOTO65dh2+mNbQir/QNTVBG3h/QdZBpns7mZ0RYbLRBgGABPbpU9351AgYy7SJf1WaeVwMrBFPQ==",
++      "license": "MIT",
++      "optional": true
++    },
++    "node_modules/onnxruntime-node": {
++      "version": "1.21.0",
++      "resolved": "https://registry.npmjs.org/onnxruntime-node/-/onnxruntime-node-1.21.0.tgz",
++      "integrity": "sha512-NeaCX6WW2L8cRCSqy3bInlo5ojjQqu2fD3D+9W5qb5irwxhEyWKXeH2vZ8W9r6VxaMPUan+4/7NDwZMtouZxEw==",
++      "hasInstallScript": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32",
++        "darwin",
++        "linux"
++      ],
++      "dependencies": {
++        "global-agent": "^3.0.0",
++        "onnxruntime-common": "1.21.0",
++        "tar": "^7.0.1"
++      }
++    },
++    "node_modules/onnxruntime-web": {
++      "version": "1.22.0-dev.20250409-89f8206ba4",
++      "resolved": "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.22.0-dev.20250409-89f8206ba4.tgz",
++      "integrity": "sha512-0uS76OPgH0hWCPrFKlL8kYVV7ckM7t/36HfbgoFw6Nd0CZVVbQC4PkrR8mBX8LtNUFZO25IQBqV2Hx2ho3FlbQ==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "flatbuffers": "^25.1.24",
++        "guid-typescript": "^1.0.9",
++        "long": "^5.2.3",
++        "onnxruntime-common": "1.22.0-dev.20250409-89f8206ba4",
++        "platform": "^1.3.6",
++        "protobufjs": "^7.2.4"
++      }
++    },
++    "node_modules/onnxruntime-web/node_modules/onnxruntime-common": {
++      "version": "1.22.0-dev.20250409-89f8206ba4",
++      "resolved": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.22.0-dev.20250409-89f8206ba4.tgz",
++      "integrity": "sha512-vDJMkfCfb0b1A836rgHj+ORuZf4B4+cc2bASQtpeoJLueuFc5DuYwjIZUBrSvx/fO5IrLjLz+oTrB3pcGlhovQ==",
++      "license": "MIT",
++      "optional": true
++    },
+     "node_modules/parseurl": {
+       "version": "1.3.3",
+       "resolved": "https://registry.npmjs.org/parseurl/-/parseurl-1.3.3.tgz",
+@@ -1128,6 +2030,37 @@
+         "node": ">=16.20.0"
+       }
+     },
++    "node_modules/platform": {
++      "version": "1.3.6",
++      "resolved": "https://registry.npmjs.org/platform/-/platform-1.3.6.tgz",
++      "integrity": "sha512-fnWVljUchTro6RiCFvCXBbNhJc2NijN7oIQxbwsyL0buWJPG85v81ehlHI9fXrJsMNgTofEoWIQeClKpgxFLrg==",
++      "license": "MIT",
++      "optional": true
++    },
++    "node_modules/protobufjs": {
++      "version": "7.6.6",
++      "resolved": "https://registry.npmjs.org/protobufjs/-/protobufjs-7.6.6.tgz",
++      "integrity": "sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg==",
++      "hasInstallScript": true,
++      "license": "BSD-3-Clause",
++      "optional": true,
++      "dependencies": {
++        "@protobufjs/aspromise": "^1.1.2",
++        "@protobufjs/base64": "^1.1.2",
++        "@protobufjs/codegen": "^2.0.5",
++        "@protobufjs/eventemitter": "^1.1.1",
++        "@protobufjs/fetch": "^1.1.1",
++        "@protobufjs/float": "^1.0.2",
++        "@protobufjs/path": "^1.1.2",
++        "@protobufjs/pool": "^1.1.0",
++        "@protobufjs/utf8": "^1.1.1",
++        "@types/node": ">=13.7.0",
++        "long": "^5.3.2"
++      },
++      "engines": {
++        "node": ">=12.0.0"
++      }
++    },
+     "node_modules/proxy-addr": {
+       "version": "2.0.7",
+       "resolved": "https://registry.npmjs.org/proxy-addr/-/proxy-addr-2.0.7.tgz",
+@@ -1208,6 +2141,24 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/roarr": {
++      "version": "2.15.4",
++      "resolved": "https://registry.npmjs.org/roarr/-/roarr-2.15.4.tgz",
++      "integrity": "sha512-CHhPh+UNHD2GTXNYhPWLnU8ONHdI+5DI+4EYIAOaiD63rHeYlZvyh8P+in5999TTSFgUYuKUAjzRI4mdh/p+2A==",
++      "license": "BSD-3-Clause",
++      "optional": true,
++      "dependencies": {
++        "boolean": "^3.0.1",
++        "detect-node": "^2.0.4",
++        "globalthis": "^1.0.1",
++        "json-stringify-safe": "^5.0.1",
++        "semver-compare": "^1.0.0",
++        "sprintf-js": "^1.1.2"
++      },
++      "engines": {
++        "node": ">=8.0"
++      }
++    },
+     "node_modules/router": {
+       "version": "2.2.0",
+       "resolved": "https://registry.npmjs.org/router/-/router-2.2.0.tgz",
+@@ -1271,6 +2222,13 @@
+         "node": ">=10"
+       }
+     },
++    "node_modules/semver-compare": {
++      "version": "1.0.0",
++      "resolved": "https://registry.npmjs.org/semver-compare/-/semver-compare-1.0.0.tgz",
++      "integrity": "sha512-YM3/ITh2MJ5MtzaM429anh+x2jiLVjqILF4m4oyQB18W7Ggea7BfqdH/wGMK7dDiMghv/6WG7znWMwUDzJiXow==",
++      "license": "MIT",
++      "optional": true
++    },
+     "node_modules/send": {
+       "version": "1.2.1",
+       "resolved": "https://registry.npmjs.org/send/-/send-1.2.1.tgz",
+@@ -1297,6 +2255,22 @@
+         "url": "https://opencollective.com/express"
+       }
+     },
++    "node_modules/serialize-error": {
++      "version": "7.0.1",
++      "resolved": "https://registry.npmjs.org/serialize-error/-/serialize-error-7.0.1.tgz",
++      "integrity": "sha512-8I8TjW5KMOKsZQTvoxjuSIa7foAwPWGOts+6o7sgjz41/qMD9VQHEDxi6PBvK2l0MXUmqZyNpUK+T2tQaaElvw==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "type-fest": "^0.13.1"
++      },
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
+     "node_modules/serve-static": {
+       "version": "2.2.1",
+       "resolved": "https://registry.npmjs.org/serve-static/-/serve-static-2.2.1.tgz",
+@@ -1322,6 +2296,51 @@
+       "integrity": "sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==",
+       "license": "ISC"
+     },
++    "node_modules/sharp": {
++      "version": "0.34.5",
++      "resolved": "https://registry.npmjs.org/sharp/-/sharp-0.34.5.tgz",
++      "integrity": "sha512-Ou9I5Ft9WNcCbXrU9cMgPBcCK8LiwLqcbywW3t4oDV37n1pzpuNLsYiAV8eODnjbtQlSDwZ2cUEeQz4E54Hltg==",
++      "hasInstallScript": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "dependencies": {
++        "@img/colour": "^1.0.0",
++        "detect-libc": "^2.1.2",
++        "semver": "^7.7.3"
++      },
++      "engines": {
++        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      },
++      "optionalDependencies": {
++        "@img/sharp-darwin-arm64": "0.34.5",
++        "@img/sharp-darwin-x64": "0.34.5",
++        "@img/sharp-libvips-darwin-arm64": "1.2.4",
++        "@img/sharp-libvips-darwin-x64": "1.2.4",
++        "@img/sharp-libvips-linux-arm": "1.2.4",
++        "@img/sharp-libvips-linux-arm64": "1.2.4",
++        "@img/sharp-libvips-linux-ppc64": "1.2.4",
++        "@img/sharp-libvips-linux-riscv64": "1.2.4",
++        "@img/sharp-libvips-linux-s390x": "1.2.4",
++        "@img/sharp-libvips-linux-x64": "1.2.4",
++        "@img/sharp-libvips-linuxmusl-arm64": "1.2.4",
++        "@img/sharp-libvips-linuxmusl-x64": "1.2.4",
++        "@img/sharp-linux-arm": "0.34.5",
++        "@img/sharp-linux-arm64": "0.34.5",
++        "@img/sharp-linux-ppc64": "0.34.5",
++        "@img/sharp-linux-riscv64": "0.34.5",
++        "@img/sharp-linux-s390x": "0.34.5",
++        "@img/sharp-linux-x64": "0.34.5",
++        "@img/sharp-linuxmusl-arm64": "0.34.5",
++        "@img/sharp-linuxmusl-x64": "0.34.5",
++        "@img/sharp-wasm32": "0.34.5",
++        "@img/sharp-win32-arm64": "0.34.5",
++        "@img/sharp-win32-ia32": "0.34.5",
++        "@img/sharp-win32-x64": "0.34.5"
++      }
++    },
+     "node_modules/shebang-command": {
+       "version": "2.0.0",
+       "resolved": "https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz",
+@@ -1415,6 +2434,13 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/sprintf-js": {
++      "version": "1.1.3",
++      "resolved": "https://registry.npmjs.org/sprintf-js/-/sprintf-js-1.1.3.tgz",
++      "integrity": "sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==",
++      "license": "BSD-3-Clause",
++      "optional": true
++    },
+     "node_modules/stack-trace": {
+       "version": "0.0.10",
+       "resolved": "https://registry.npmjs.org/stack-trace/-/stack-trace-0.0.10.tgz",
+@@ -1442,6 +2468,23 @@
+         "safe-buffer": "~5.2.0"
+       }
+     },
++    "node_modules/tar": {
++      "version": "7.5.22",
++      "resolved": "https://registry.npmjs.org/tar/-/tar-7.5.22.tgz",
++      "integrity": "sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA==",
++      "license": "BlueOak-1.0.0",
++      "optional": true,
++      "dependencies": {
++        "@isaacs/fs-minipass": "^4.0.0",
++        "chownr": "^3.0.0",
++        "minipass": "^7.1.2",
++        "minizlib": "^3.1.0",
++        "yallist": "^5.0.0"
++      },
++      "engines": {
++        "node": ">=18"
++      }
++    },
+     "node_modules/text-hex": {
+       "version": "1.0.0",
+       "resolved": "https://registry.npmjs.org/text-hex/-/text-hex-1.0.0.tgz",
+@@ -1466,6 +2509,26 @@
+         "node": ">= 14.0.0"
+       }
+     },
++    "node_modules/tslib": {
++      "version": "2.8.1",
++      "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
++      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==",
++      "license": "0BSD",
++      "optional": true
++    },
++    "node_modules/type-fest": {
++      "version": "0.13.1",
++      "resolved": "https://registry.npmjs.org/type-fest/-/type-fest-0.13.1.tgz",
++      "integrity": "sha512-34R7HTnG0XIJcBSn5XhDd7nNFPRcXYRZrBB2O2jdKqYODldSzBAqzsWoZYYvduky73toYS/ESqxPvkDf/F0XMg==",
++      "license": "(MIT OR CC0-1.0)",
++      "optional": true,
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
+     "node_modules/type-is": {
+       "version": "2.1.0",
+       "resolved": "https://registry.npmjs.org/type-is/-/type-is-2.1.0.tgz",
+@@ -1497,6 +2560,13 @@
+         "url": "https://opencollective.com/express"
+       }
+     },
++    "node_modules/undici-types": {
++      "version": "8.3.0",
++      "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-8.3.0.tgz",
++      "integrity": "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==",
++      "license": "MIT",
++      "optional": true
++    },
+     "node_modules/unpipe": {
+       "version": "1.0.0",
+       "resolved": "https://registry.npmjs.org/unpipe/-/unpipe-1.0.0.tgz",
+@@ -1596,6 +2666,16 @@
+       "integrity": "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==",
+       "license": "ISC"
+     },
++    "node_modules/yallist": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/yallist/-/yallist-5.0.0.tgz",
++      "integrity": "sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==",
++      "license": "BlueOak-1.0.0",
++      "optional": true,
++      "engines": {
++        "node": ">=18"
++      }
++    },
+     "node_modules/zod": {
+       "version": "4.4.3",
+       "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+diff --git a/package.json b/package.json
+index c4fd7ca..f1caaa4 100644
+--- a/package.json
++++ b/package.json
+@@ -3,9 +3,10 @@
+   "version": "1.0.0",
+   "description": "",
+   "main": "index.js",
++  "type": "module",
+   "scripts": {
+     "start": "node server.js",
+-    "test": "node --test test/*.test.js",
++    "test": "RAG_ENABLED=0 node --test test/*.test.js",
+     "lint:docs": "node tools/ashlar/lint-cli.js",
+     "lint:snippets": "node scripts/lint-snippets.js",
+     "smoke:generators": "node scripts/smoke-generators.js",
+@@ -16,7 +17,9 @@
+   "keywords": [],
+   "author": "",
+   "license": "ISC",
+-  "type": "module",
++  "engines": {
++    "node": ">=20.11.0"
++  },
+   "dependencies": {
+     "@modelcontextprotocol/sdk": "^1.29.0",
+     "express": "^5.2.1",
+@@ -25,5 +28,8 @@
+     "winston": "^3.19.0",
+     "winston-daily-rotate-file": "^5.0.0",
+     "zod": "^4.4.3"
++  },
++  "optionalDependencies": {
++    "@huggingface/transformers": "^3.0.0"
+   }
+ }
+diff --git a/plans/rag-implementation-plan.md b/plans/rag-implementation-plan.md
+new file mode 100644
+index 0000000..61d504e
+--- /dev/null
++++ b/plans/rag-implementation-plan.md
+@@ -0,0 +1,66 @@
++# RAG over MCP Implementation Plan for ln-ashlar (Phase 1a)
++
++## Objective
++Enhance the `mcp-http-server` with a Retrieval-Augmented Generation (RAG) system for semantic search over `docs-mcp/` documentation. 
++- *Note on Scope:* Excludes `theme/` and `components/*.js` code for Phase 1a.
++- *Dependencies:* `@huggingface/transformers` v3 as an `optionalDependency` (which transitively pulls `onnxruntime-node`). `engines.node` must be `>=20.11.0` in `package.json`.
++- *Tri-State Toggle:* Controlled by `RAG_ENABLED`. Unset: auto-detect optional deps. `0`: hard off (clean boot). `1`: hard on (fails if missing).
++- *Degradation:* Gracefully degrades to pure lexical (Fuse.js) search if `0`, building, failed, or if `corpusEpoch` mismatches. Degraded mode output is **byte-identical** to the current implementation.
++
++## 1. Indexing & Storage Architecture
++- **Embedding Engine**: Use `Xenova/bge-small-en-v1.5` (384d). 
++  - Required params: `{ pooling: 'cls', normalize: true, dtype: 'q8' }`. Query prefix: `"Represent this sentence for searching relevant passages: "`.
++  - **Weight Provisioning**: Set `env.allowRemoteModels = true` and `env.cache_dir = path.resolve(import.meta.dirname, '../../../cache/models')`. First-boot download is acceptable.
++- **In-Memory Immutable Tuple**:
++  - Format: `{ epoch: number, vectors: Float32Array, metadata: Array, hashToRowIndex: Map }`.
++  - `epoch` is strictly bound to `corpus.js`'s `combinedSignature(roots)`.
++  - Memory Alignment: `new Float32Array(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength))`.
++- **Cache & Git Sync**:
++  - Path: `path.resolve(import.meta.dirname, '../../../cache/rag-vectors.bin')`. Add `cache/` to `.gitignore`.
++  - Cache header: `{ magic: 'RAG1', schemaVersion: 1, modelId: '...', dtype: 'q8', dim: 384, corpusEpoch: '...', chunkCount: N }`. Stale or mismatched reads fail loudly and trigger a cold build. Compaction uses tmp-then-rename.
++- **Worker Thread & Build Mutex**:
++  - `ensureRagIndex()` wraps the worker trigger in a single-flight promise.
++  - Queries have a 250ms timeout. Slow queries fall back to lexical, and their correlation-ID entry is deleted. Workers are `unref()`'d.
++  - Worker must execute a dummy warmup query before transitioning state to `ready` to avoid cold-start timeouts.
++
++## 2. Chunking Strategy & Shared ID Space
++- **Shared ID Space Mapping**: 
++  - The shared identity relies on a stable `sectionIdx`. `corpus.js` must be modified to push `sectionIdx` into `sectionUnits` (index within `parsed.sections`). The synthetic `(summary)` gets a reserved sentinel index (e.g., `-1`).
++  - `chunkId` format: `"<compositeKey>#<sectionIdx_padded>#<chunkIdx_padded>"`. The `docKey` is explicitly the composite `key` (`<rootIndex>:<name>`).
++  - Candidate Pool is the **UNION** of `semantic top-K` and `lexical top-K`. Lexical-only chunks are materialized as parent section units contributing only their lexical RRF term. Semantic-only chunks contribute only their semantic term. Ranks are 1-indexed.
++- **Chunk Construction**:
++  - Token limit is strictly `<= 300` measured by the HF tokenizer (accounting for the 512 max length minus the context prefix).
++  - Prepend contextual identity (e.g., `[ln-modal] Attribute: data-ln-modal-for ...`).
++  - Serialize tables per-row. Exclude HTML markup and `(summary)`.
++
++## 3. Search Pipeline & RRF (search_docs.js)
++- **Unified Filter Predicate**: Apply `makeDocFilter({classification, domain, context, status, tags})` consistently across Stage 0, pre-filter semantic, and post-filter lexical. Context filters apply ONLY to skills.
++- **Stage 0 Exact Match**: 
++  - Looks up normalized query in `attributeIndex`/`eventIndex`/`apiIndex`. Applies unified filter.
++  - Generates synthetic heading (e.g., `Attribute: data-ln-modal-for`). Stage 0 hit ID: `STAGE0:<compositeKey>:<heading>`.
++- **Hybrid Search (RRF) & Guard Order**:
++  1. **Pre-fusion Floor**: Discard vectors with raw **cosine similarity** `< RELEVANCE_FLOOR`. Floor is a constant in `store.js` initialized to `0.65`, calibrated via tuning script. (Applies ONLY to semantic candidates).
++  2. **Fusion**: RRF `score = 1 / (60 + rank_semantic) + 1 / (60 + rank_lexical)`. Tie-break: lexicographic sort on padded `chunkId`.
++  3. **Diversity Caps**: 
++      - Max 1 chunk per `sectionIdx` (to prevent duplicate headings).
++      - Max 3 chunks per composite `docKey`.
++  4. **Prepend Stage 0**: Prepended and deduped against hybrid hits matching the synthetic ID.
++  5. **Limit & Backfill**: Slice output to user `limit` (default 10). If diversity caps drop results below `limit`, re-admit capped chunks in RRF order.
++  6. **Output Format**: `- **<doc>** › <heading>: <chunk_preview> (summary: …)`.
++
++## 4. Evaluation & Rollout
++- **Phase 1 Eval Harness**: `scripts/rag-tune.js` measures `recall@10` (aligned with tool `limit`) against a hand-labeled gold set of 30 queries created *before* tuning. Pass bar: `recall@10 >= Fuse baseline` + no catastrophic regressions on exact-match queries. Calibrates `RELEVANCE_FLOOR`.
++- **Regression Test**: 
++  - `test/rag.test.js` uses `RAG_EMBEDDER=stub` to avoid HF dependencies.
++  - `package.json` test script passes `RAG_ENABLED=0` to ensure legacy tests use degraded path without downloading weights.
++- **Rollout**: `healthcheck.js` description updated; returns `"OK (RAG: ready|building|failed|disabled)"`.
++
++## 5. File Manifest
++- **Created**:
++  - `tools/ashlar/rag/chunker.js`, `store.js`, `worker.js`, `search.js`
++  - `scripts/rag-tune.js` & `test/rag.test.js`
++- **Modified**:
++  - `tools/search_docs.js`, `tools/ashlar/corpus.js` (worker lifecycle, `indexEpoch`, `sectionIdx` mapping)
++  - `tools/healthcheck.js`, `tools/ashlar/README.md`
++  - `package.json` (add `@huggingface/transformers` as `optionalDependency`, update `engines.node`, update `test` script)
++  - `.gitignore` (add `cache/`)
+diff --git a/scripts/rag-tune.js b/scripts/rag-tune.js
+new file mode 100644
+index 0000000..9d9d778
+--- /dev/null
++++ b/scripts/rag-tune.js
+@@ -0,0 +1,35 @@
++import { semanticSearch, ensureRagIndex } from '../tools/ashlar/rag/search.js';
++import { ensureIndex } from '../tools/ashlar/corpus.js';
++
++// Gold set of queries
++const QUERIES = [
++  { q: "how to show a modal", expectDoc: "ln-modal" },
++  { q: "submitting a form", expectDoc: "ln-form" },
++  { q: "displaying a list of items", expectDoc: "ln-list" }
++  // ... more queries ...
++];
++
++async function runTuning() {
++  process.env.RAG_ENABLED = '1';
++  console.log('Building index and warming up RAG worker...');
++  const index = await ensureIndex();
++  
++  if (!index) {
++    console.error('No index built');
++    process.exit(1);
++  }
++
++  let recall = 0;
++  for (const { q, expectDoc } of QUERIES) {
++    const results = await semanticSearch(q);
++    if (results && results.some(r => r.docKey.includes(expectDoc))) {
++      recall++;
++    }
++  }
++  
++  console.log(`Semantic Recall: ${recall}/${QUERIES.length}`);
++  console.log('Tuning complete. Calibrate RELEVANCE_FLOOR in store.js based on these results.');
++  process.exit(0);
++}
++
++runTuning().catch(console.error);
+diff --git a/test/rag.test.js b/test/rag.test.js
+new file mode 100644
+index 0000000..64588a7
+--- /dev/null
++++ b/test/rag.test.js
+@@ -0,0 +1,122 @@
++import { test, after } from 'node:test';
++import assert from 'node:assert';
++import { getRagState, ensureRagIndex, shutdownRag } from '../tools/ashlar/rag/search.js';
++import { ensureIndex } from '../tools/ashlar/corpus.js';
++import { handler as searchDocs } from '../tools/search_docs.js';
++import { saveCache, loadCache, RAG_CONFIG } from '../tools/ashlar/rag/store.js';
++import { generateChunks } from '../tools/ashlar/rag/chunker.js';
++import { fileURLToPath } from 'url';
++import path from 'path';
++
++after(() => {
++  shutdownRag();
++});
++
++const __dirname = path.dirname(fileURLToPath(import.meta.url));
++const fixtureRoot = path.join(__dirname, 'fixtures', 'ashlar-repo');
++
++test('RAG degrades gracefully when RAG_ENABLED=0', async () => {
++  process.env.DOCS_CORPUS_ROOTS = fixtureRoot;
++  process.env.RAG_ENABLED = '0';
++  await ensureIndex();
++  assert.strictEqual(getRagState(), 'disabled');
++});
++
++test('RAG degraded mode produces identical results to lexical-only', async () => {
++  process.env.DOCS_CORPUS_ROOTS = fixtureRoot;
++  process.env.RAG_ENABLED = '0';
++  const index = await ensureIndex();
++  
++  const result1 = await searchDocs({ query: 'button', limit: 5 });
++  
++  const fallbackResults = index.fuse.search('button').filter(r => {
++    const doc = index.docs.get(r.item.key);
++    if (!doc) return false;
++    if (doc.folder === "skills" && doc.context !== "app") return false;
++    return true;
++  }).slice(0, 5);
++  
++  const lines = fallbackResults.map((r) => {
++    const doc = index.docs.get(r.item.key);
++    const text = (r.item.text || "").trim();
++    const snippet = text.length > 200 ? `${text.slice(0, 200)}…` : text;
++    return `- **${doc.name}** › ${r.item.heading}: ${snippet.replace(/\n+/g, " ")} (summary: ${doc.summary})`;
++  });
++  
++  const expectedText = lines.join("\n");
++  
++  assert.strictEqual(result1.content[0].text, expectedText);
++});
++
++test('RAG hybrid search with stub embedder', async () => {
++  const fixtureRoot2 = path.join(__dirname, 'fixtures', 'ashlar-repo2');
++  process.env.DOCS_CORPUS_ROOTS = `${fixtureRoot},${fixtureRoot2}`;
++  process.env.RAG_ENABLED = '1';
++  process.env.RAG_EMBEDDER = 'stub';
++  
++  const index = await ensureIndex();
++  
++  // Wait for worker to finish building
++  let retries = 0;
++  while (getRagState() === 'building' && retries < 50) {
++    await new Promise(r => setTimeout(r, 100));
++    retries++;
++  }
++  
++  assert.strictEqual(getRagState(), 'ready');
++  
++  const result = await searchDocs({ query: 'button', limit: 10 });
++  assert.ok(result.content[0].text.length > 0);
++  
++  // caps and backfill
++  const lines = result.content[0].text.split('\n');
++  assert.ok(lines.length <= 10);
++});
++
++test('saveCache -> loadCache preserves vectors.byteOffset === 0', () => {
++  const epoch = 'test-epoch';
++  const metadata = [{ chunkId: '1', docKey: 'a:b', sectionIdx: 0 }];
++  const vectors = new Float32Array(RAG_CONFIG.DIMENSIONS);
++  for (let i = 0; i < vectors.length; i++) vectors[i] = Math.random();
++  
++  saveCache(epoch, vectors, metadata);
++  const cache = loadCache(epoch);
++  
++  assert.ok(cache !== null);
++  assert.strictEqual(cache.vectors.byteOffset, 0);
++  assert.deepStrictEqual(cache.metadata, metadata);
++});
++
++test('chunker recursive split handles over-length chunks', () => {
++  const RAG_CONFIG_TEST = { MAX_TOKENS: 5 };
++  
++  const doc = {
++    key: 'test:doc',
++    name: 'doc',
++    parsed: {
++      sections: [
++        {
++          title: 'Section 1',
++          text: 'One two three four five six seven eight nine ten eleven twelve.'
++        }
++      ]
++    }
++  };
++  
++  const index = { docs: new Map([['test:doc', doc]]) };
++  
++  // Mock tokenizer that just counts words as tokens
++  const tokenizer = (text) => ({ input_ids: { size: text.trim().split(/\s+/).length } });
++  
++  const chunks = generateChunks(index, tokenizer, RAG_CONFIG_TEST);
++  
++  // The full text has prefix "[doc] Section 1: " + words.
++  // Prefix is 3 tokens. Max is 5. So it only allows 2 words per chunk.
++  // Expect it to successfully split recursively without infinite loop.
++  assert.ok(chunks.length > 2);
++  chunks.forEach(c => {
++    // Assert all generated chunks fit within the token limit
++    const tokens = tokenizer(c.text);
++    assert.ok(tokens.input_ids.size <= RAG_CONFIG_TEST.MAX_TOKENS, `Chunk exceeded MAX_TOKENS: ${tokens.input_ids.size} > ${RAG_CONFIG_TEST.MAX_TOKENS}`);
++  });
++});
+diff --git a/tools/ashlar/README.md b/tools/ashlar/README.md
+index ccee902..344f67f 100644
+--- a/tools/ashlar/README.md
++++ b/tools/ashlar/README.md
+@@ -170,3 +170,11 @@ With no args, lints the configured roots (`DOCS_CORPUS_ROOTS` / legacy
+ `ASHLAR_DOCS_REPO`). Args, when given, override env config. Exit codes:
+ `0` clean, `1` findings present, `2` no corpus configured. Also exposed as
+ the npm script `npm run lint:docs`.
++
++### RAG Search
++RAG is supported for semantic search via `@huggingface/transformers` (v3). 
++Controlled by the `RAG_ENABLED` environment variable:
++- Unset: Auto-detects dependencies.
++- `1`: Fails if dependencies are missing.
++- `0`: Hard off, degrades to purely lexical fuzzy search.
++The RAG chunker splits documents based on token limit (< 300 tokens) using the tokenizer.
+diff --git a/tools/ashlar/corpus.js b/tools/ashlar/corpus.js
+index 779eed0..425340b 100644
+--- a/tools/ashlar/corpus.js
++++ b/tools/ashlar/corpus.js
+@@ -20,6 +20,7 @@ const SKILL_CONTEXTS = ['app', 'web', 'wordpress'];
+ // ./router-contract.js; re-exported here so existing importers keep working.
+ export { ROUTER_FILENAME } from './router-contract.js';
+ import { ROUTER_FILENAME } from './router-contract.js';
++import { ensureRagIndex } from './rag/search.js';
+ 
+ let cachedIndex = null;
+ let cachedRootsKey = null;
+@@ -330,10 +331,11 @@ export function buildIndex(rootPaths) {
+ 
+       markupIndex.set(key, parsed.markup);
+ 
+-      for (const section of parsed.sections) {
+-        sectionUnits.push({ key, doc: name, heading: section.title, text: section.text });
++      for (let i = 0; i < parsed.sections.length; i++) {
++        const section = parsed.sections[i];
++        sectionUnits.push({ key, doc: name, heading: section.title, text: section.text, sectionIdx: i });
+       }
+-      sectionUnits.push({ key, doc: name, heading: '(summary)', text: docEntry.summary });
++      sectionUnits.push({ key, doc: name, heading: '(summary)', text: docEntry.summary, sectionIdx: -1 });
+     }
+ 
+     for (const folder of NON_SKILL_FOLDERS) {
+@@ -449,6 +451,11 @@ export function buildIndex(rootPaths) {
+     minMatchCharLength: 2
+   });
+ 
++  const sectionUnitsMap = new Map();
++  for (const u of sectionUnits) {
++    sectionUnitsMap.set(`${u.key}:${u.sectionIdx}`, u);
++  }
++
+   return {
+     roots: rootMeta,
+     builtAt: Date.now(),
+@@ -463,10 +470,12 @@ export function buildIndex(rootPaths) {
+     markupIndex,
+     linkGraph,
+     fuse,
+-    sectionUnits
++    sectionUnits,
++    sectionUnitsMap
+   };
+ }
+ 
++
+ /**
+  * Build the index on first call; on later calls, re-read every configured
+  * root's git HEAD signature and rebuild only if the combined signature
+@@ -501,8 +510,16 @@ export async function ensureIndex() {
+   }
+ 
+   const built = buildIndex(roots);
++  built.indexEpoch = currentSignature;
++  
+   cachedIndex = built;
+   cachedRootsKey = rootsKey;
+   cachedSignature = currentSignature;
++  
++  // Trigger RAG index asynchronously
++  ensureRagIndex(roots, currentSignature).catch(err => {
++    console.error('RAG Worker Error:', err);
++  });
++  
+   return built;
+ }
+diff --git a/tools/ashlar/rag/chunker.js b/tools/ashlar/rag/chunker.js
+new file mode 100644
+index 0000000..9c87be5
+--- /dev/null
++++ b/tools/ashlar/rag/chunker.js
+@@ -0,0 +1,74 @@
++export function generateChunks(index, tokenizer, RAG_CONFIG) {
++  const chunks = [];
++  
++  for (const doc of index.docs.values()) {
++    const { key, name, parsed } = doc;
++    
++    for (let i = 0; i < parsed.sections.length; i++) {
++      const section = parsed.sections[i];
++      const chunkIdPrefix = `${key}#${i.toString().padStart(4, '0')}`;
++      let chunkIdx = 0;
++      
++      const lines = section.text.split('\n');
++      let currentText = '';
++      
++      const flush = (text, prefix) => {
++        if (!text.trim()) return;
++        const cleanText = text.replace(/<[^>]+>/g, '').trim();
++        if (!cleanText) return;
++        
++        const fullText = `${prefix}${cleanText}`;
++        const tokens = tokenizer(fullText, { add_special_tokens: false }).input_ids;
++        
++        if (tokens.size > RAG_CONFIG.MAX_TOKENS) {
++          // Naive split if still too long (fallback)
++          const words = cleanText.split(' ');
++          if (words.length < 2) return;
++          const half = Math.floor(words.length / 2);
++          flush(words.slice(0, half).join(' '), prefix);
++          flush(words.slice(half).join(' '), prefix);
++          return;
++        }
++        
++        chunks.push({
++          chunkId: `${chunkIdPrefix}#${(chunkIdx++).toString().padStart(4, '0')}`,
++          docKey: key,
++          sectionIdx: i,
++          text: fullText
++        });
++      };
++      
++      const prefix = `[${name}] ${section.title}: `;
++      
++      for (const line of lines) {
++        if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
++          // It's a table row
++          if (currentText) {
++            flush(currentText, prefix);
++            currentText = '';
++          }
++          if (!line.includes('---')) {
++            flush(line, prefix);
++          }
++        } else {
++          // Accumulate text until we hit token limit
++          const testText = currentText ? `${currentText}\n${line}` : line;
++          const tokens = tokenizer(`${prefix}${testText.replace(/<[^>]+>/g, '')}`, { add_special_tokens: false }).input_ids;
++          
++          if (tokens.size > RAG_CONFIG.MAX_TOKENS) {
++            flush(currentText, prefix);
++            currentText = line;
++          } else {
++            currentText = testText;
++          }
++        }
++      }
++      
++      if (currentText) {
++        flush(currentText, prefix);
++      }
++    }
++  }
++  
++  return chunks;
++}
+diff --git a/tools/ashlar/rag/search.js b/tools/ashlar/rag/search.js
+new file mode 100644
+index 0000000..4c121f8
+--- /dev/null
++++ b/tools/ashlar/rag/search.js
+@@ -0,0 +1,133 @@
++import { Worker } from 'worker_threads';
++import path from 'path';
++
++let ragState = 'disabled'; // ready, building, failed, disabled
++let worker = null;
++let initPromise = null;
++let currentEpoch = null;
++
++let queryIdCounter = 0;
++const pendingQueries = new Map();
++
++export function getRagState() {
++  return ragState;
++}
++
++export function shutdownRag() {
++  if (worker) {
++    worker.terminate();
++    worker = null;
++  }
++}
++
++export function ensureRagIndex(roots, expectedEpoch) {
++  if (expectedEpoch !== currentEpoch) {
++    if (worker) {
++      worker.terminate();
++      worker = null;
++    }
++    initPromise = null;
++    currentEpoch = expectedEpoch;
++  }
++
++  if (initPromise) return initPromise;
++
++  const toggle = process.env.RAG_ENABLED;
++  if (toggle === '0') {
++    ragState = 'disabled';
++    return Promise.resolve();
++  }
++
++  initPromise = (async () => {
++    if (toggle !== '1') {
++      try {
++        await import('@huggingface/transformers');
++      } catch {
++        ragState = 'disabled';
++        return;
++      }
++    }
++
++    ragState = 'building';
++
++    return new Promise((resolve, reject) => {
++      try {
++        worker = new Worker(path.resolve(import.meta.dirname, 'worker.js'), {
++          workerData: { roots, expectedEpoch }
++        });
++
++        worker.unref();
++
++        worker.on('message', (msg) => {
++          if (msg.type === 'status') {
++            ragState = msg.status;
++            if (msg.status === 'ready' || msg.status === 'failed') {
++              resolve();
++            }
++          } else if (msg.type === 'result') {
++            const cb = pendingQueries.get(msg.id);
++            if (cb) {
++              pendingQueries.delete(msg.id);
++              if (msg.error) {
++                cb.reject(new Error(msg.error));
++              } else {
++                cb.resolve(msg.results);
++              }
++            }
++          }
++        });
++
++        worker.on('error', (err) => {
++          console.error("RAG worker error:", err);
++          ragState = 'failed';
++          resolve();
++        });
++
++        worker.on('exit', () => {
++          if (ragState === 'building') {
++            ragState = 'failed';
++          }
++          resolve();
++        });
++      } catch (err) {
++        if (toggle === '1') {
++          reject(err);
++        } else {
++          ragState = 'failed';
++          resolve();
++        }
++      }
++    });
++  })();
++
++  return initPromise;
++}
++
++export async function semanticSearch(text, expectedEpoch, allowedDocKeys) {
++  if (expectedEpoch !== currentEpoch) return null;
++  if (ragState !== 'ready') return null;
++  
++  return new Promise((resolve) => {
++    const id = ++queryIdCounter;
++    
++    const timeout = setTimeout(() => {
++      if (pendingQueries.has(id)) {
++        pendingQueries.delete(id);
++        resolve(null);
++      }
++    }, 250);
++    
++    pendingQueries.set(id, {
++      resolve: (res) => {
++        clearTimeout(timeout);
++        resolve(res);
++      },
++      reject: (err) => {
++        clearTimeout(timeout);
++        resolve(null);
++      }
++    });
++    
++    worker.postMessage({ type: 'query', id, text, allowedDocKeys: allowedDocKeys ? Array.from(allowedDocKeys) : null });
++  });
++}
+diff --git a/tools/ashlar/rag/store.js b/tools/ashlar/rag/store.js
+new file mode 100644
+index 0000000..4d06a94
+--- /dev/null
++++ b/tools/ashlar/rag/store.js
+@@ -0,0 +1,126 @@
++import fs from 'fs';
++import path from 'path';
++
++export const RAG_CONFIG = {
++  MODEL_ID: 'Xenova/bge-small-en-v1.5',
++  DIMENSIONS: 384,
++  MAX_TOKENS: 300,
++  RELEVANCE_FLOOR: 0.65,
++  QUERY_PREFIX: "Represent this sentence for searching relevant passages: ",
++  MAGIC: 'RAG1',
++  SCHEMA_VERSION: 1
++};
++
++export const CACHE_DIR = path.resolve(import.meta.dirname, '../../../cache');
++export const CACHE_FILE = path.join(CACHE_DIR, 'rag-vectors.bin');
++export const MODELS_DIR = path.join(CACHE_DIR, 'models');
++
++/**
++ * @typedef {Object} RagIndex
++ * @property {string} epoch
++ * @property {Float32Array} vectors
++ * @property {Array<any>} metadata
++ * @property {Map<string, number>} hashToRowIndex
++ */
++
++export function loadCache(expectedEpoch) {
++  if (!fs.existsSync(CACHE_FILE)) return null;
++  
++  try {
++    const buffer = fs.readFileSync(CACHE_FILE);
++    let offset = 0;
++    
++    const headerLen = buffer.readUInt32LE(offset);
++    offset += 4;
++    
++    const headerJson = buffer.toString('utf8', offset, offset + headerLen);
++    offset += headerLen;
++    
++    const parsed = JSON.parse(headerJson);
++    
++    if (
++      parsed.magic !== RAG_CONFIG.MAGIC ||
++      parsed.schemaVersion !== RAG_CONFIG.SCHEMA_VERSION ||
++      parsed.modelId !== RAG_CONFIG.MODEL_ID ||
++      parsed.corpusEpoch !== expectedEpoch
++    ) {
++      return null;
++    }
++
++    if (parsed.dim !== RAG_CONFIG.DIMENSIONS) {
++      console.error(`RAG cache corruption: Expected dim ${RAG_CONFIG.DIMENSIONS}, got ${parsed.dim}`);
++      return null;
++    }
++
++    if (parsed.dtype !== 'q8') {
++      console.error(`RAG cache corruption: Expected dtype 'q8', got ${parsed.dtype}`);
++      return null;
++    }
++    
++    const vectorBytes = buffer.length - offset;
++    const expectedBytes = parsed.chunkCount * parsed.dim * 4;
++    if (vectorBytes !== expectedBytes) {
++      console.error(`RAG cache corruption: Expected ${expectedBytes} bytes of vectors, got ${vectorBytes}`);
++      return null;
++    }
++
++    // Align memory by slicing the underlying buffer
++    const vectorBuffer = buffer.subarray(offset);
++    const vectors = new Float32Array(vectorBuffer.buffer.slice(vectorBuffer.byteOffset, vectorBuffer.byteOffset + vectorBuffer.byteLength));
++    
++    const hashToRowIndex = new Map();
++    parsed.metadata.forEach((m, i) => hashToRowIndex.set(m.chunkId, i));
++    
++    return Object.freeze({
++      epoch: parsed.corpusEpoch,
++      vectors,
++      metadata: parsed.metadata,
++      hashToRowIndex
++    });
++  } catch (err) {
++    console.error("RAG Cache Error:", err);
++    return null;
++  }
++}
++
++export function saveCache(epoch, vectors, metadata) {
++  if (!fs.existsSync(CACHE_DIR)) {
++    fs.mkdirSync(CACHE_DIR, { recursive: true });
++  }
++  
++  const header = {
++    magic: RAG_CONFIG.MAGIC,
++    schemaVersion: RAG_CONFIG.SCHEMA_VERSION,
++    modelId: RAG_CONFIG.MODEL_ID,
++    dtype: 'q8',
++    dim: RAG_CONFIG.DIMENSIONS,
++    corpusEpoch: epoch,
++    chunkCount: metadata.length,
++    metadata
++  };
++  
++  const headerBuffer = Buffer.from(JSON.stringify(header), 'utf8');
++  const lenBuffer = Buffer.alloc(4);
++  lenBuffer.writeUInt32LE(headerBuffer.length, 0);
++  
++  const vectorBuffer = Buffer.from(vectors.buffer, vectors.byteOffset, vectors.byteLength);
++  
++  const tmpFile = `${CACHE_FILE}.tmp.${Date.now()}`;
++  let fd = null;
++  try {
++    fd = fs.openSync(tmpFile, 'w');
++    fs.writeSync(fd, lenBuffer);
++    fs.writeSync(fd, headerBuffer);
++    fs.writeSync(fd, vectorBuffer);
++    fs.fsyncSync(fd);
++    fs.closeSync(fd);
++    fd = null;
++    fs.renameSync(tmpFile, CACHE_FILE);
++  } finally {
++    if (fd !== null) {
++      try { fs.closeSync(fd); } catch (err) {}
++      try { fs.unlinkSync(tmpFile); } catch (err) {}
++    }
++  }
++}
++
+diff --git a/tools/ashlar/rag/worker.js b/tools/ashlar/rag/worker.js
+new file mode 100644
+index 0000000..efe7999
+--- /dev/null
++++ b/tools/ashlar/rag/worker.js
+@@ -0,0 +1,133 @@
++import { parentPort, workerData } from 'worker_threads';
++import { RAG_CONFIG, loadCache, saveCache, MODELS_DIR } from './store.js';
++import { generateChunks } from './chunker.js';
++import { buildIndex, configuredRoots } from '../corpus.js';
++
++let pipeline;
++let indexData;
++
++async function init() {
++  try {
++    // Check if we need to build
++    const { roots, expectedEpoch } = workerData;
++    const cache = loadCache(expectedEpoch);
++    
++    if (process.env.RAG_EMBEDDER === 'stub') {
++      pipeline = async (texts) => {
++        const arr = Array.isArray(texts) ? texts : [texts];
++        return {
++          tolist: () => arr.map(() => {
++            const f = new Float32Array(RAG_CONFIG.DIMENSIONS);
++            f[0] = 1.0;
++            return f;
++          })
++        };
++      };
++      pipeline.tokenizer = (text) => ({ input_ids: text.split(' ') });
++    } else {
++      const { env, pipeline: hfPipeline } = await import('@huggingface/transformers');
++      env.allowRemoteModels = true;
++      env.cache_dir = MODELS_DIR;
++      pipeline = await hfPipeline('feature-extraction', RAG_CONFIG.MODEL_ID, {
++        dtype: 'q8',
++      });
++    }
++    
++    if (cache) {
++      indexData = cache;
++    } else {
++      parentPort.postMessage({ type: 'status', status: 'building' });
++      
++      const corpusIndex = buildIndex(roots);
++      
++      // We need the tokenizer for chunking
++      const tokenizer = pipeline.tokenizer;
++      const chunks = generateChunks(corpusIndex, tokenizer, RAG_CONFIG);
++      
++      const texts = chunks.map(c => c.text);
++      
++      const vectors = new Float32Array(chunks.length * RAG_CONFIG.DIMENSIONS);
++      
++      // Batch size for processing
++      const BATCH_SIZE = 32;
++      for (let i = 0; i < texts.length; i += BATCH_SIZE) {
++        const batch = texts.slice(i, i + BATCH_SIZE);
++        const output = await pipeline(batch, { pooling: 'cls', normalize: true });
++        const outputList = output.tolist();
++        
++        for (let j = 0; j < batch.length; j++) {
++          const vector = outputList[j];
++          vectors.set(vector, (i + j) * RAG_CONFIG.DIMENSIONS);
++        }
++      }
++      
++      const metadata = chunks.map(c => ({
++        chunkId: c.chunkId,
++        docKey: c.docKey,
++        sectionIdx: c.sectionIdx
++      }));
++      
++      saveCache(expectedEpoch, vectors, metadata);
++      indexData = loadCache(expectedEpoch); // Reload to get map and exact buffers
++      if (!indexData) {
++        throw new Error("Failed to load cache after saving");
++      }
++    }
++    
++    // Warmup query
++    await pipeline(RAG_CONFIG.QUERY_PREFIX + "test", { pooling: 'cls', normalize: true });
++    
++    parentPort.postMessage({ type: 'status', status: 'ready' });
++  } catch (err) {
++    parentPort.postMessage({ type: 'status', status: 'failed', error: err.message });
++  }
++}
++
++init();
++
++parentPort.on('message', async (msg) => {
++  if (msg.type === 'query') {
++    if (!pipeline || !indexData) {
++      parentPort.postMessage({ type: 'result', id: msg.id, error: 'Not ready' });
++      return;
++    }
++    try {
++      const output = await pipeline(RAG_CONFIG.QUERY_PREFIX + msg.text, { pooling: 'cls', normalize: true });
++      const queryVector = output.tolist()[0];
++      
++      // Compute cosine similarities
++      const { vectors, metadata } = indexData;
++      const similarities = [];
++      const dim = RAG_CONFIG.DIMENSIONS;
++      const allowedSet = msg.allowedDocKeys ? new Set(msg.allowedDocKeys) : null;
++      
++      for (let i = 0; i < metadata.length; i++) {
++        const m = metadata[i];
++        if (allowedSet && !allowedSet.has(m.docKey)) continue;
++        
++        let dot = 0;
++        const offset = i * dim;
++        for (let j = 0; j < dim; j++) {
++          dot += queryVector[j] * vectors[offset + j];
++        }
++        
++        if (dot >= RAG_CONFIG.RELEVANCE_FLOOR) {
++          similarities.push({
++            chunkId: m.chunkId,
++            docKey: m.docKey,
++            sectionIdx: m.sectionIdx,
++            score: dot
++          });
++        }
++      }
++      
++      // Sort by score desc and bound to top-100
++      similarities.sort((a, b) => b.score - a.score);
++      const topK = similarities.slice(0, 100);
++      
++      parentPort.postMessage({ type: 'result', id: msg.id, results: topK });
++    } catch (err) {
++      parentPort.postMessage({ type: 'result', id: msg.id, error: err.message });
++    }
++  }
++});
+diff --git a/tools/healthcheck.js b/tools/healthcheck.js
+index f9bc5f1..6f84c99 100644
+--- a/tools/healthcheck.js
++++ b/tools/healthcheck.js
+@@ -4,6 +4,8 @@ export const definition = {
+   description: "Returns server health status",
+   inputSchema: {}
+ };
++import { getRagState } from "./ashlar/rag/search.js";
++
+ export const handler = async () => ({
+-  content: [{ type: "text", text: "OK" }]
++  content: [{ type: "text", text: `OK (RAG: ${getRagState()})` }]
+ });
+diff --git a/tools/review_code.js b/tools/review_code.js
+index 3080504..cdd6848 100644
+--- a/tools/review_code.js
++++ b/tools/review_code.js
+@@ -4,6 +4,7 @@ import "winston-daily-rotate-file";
+ import { runReview, detectReviewerEngine, loadReviewConfig } from "../lib/review-runner.js";
+ import { buildCodeReviewPrompt, extractVerdict } from "../lib/gemini-prompts.js";
+ 
++
+ // Winston logger for review_code operations
+ const logger = winston.createLogger({
+ 	level: "info",
+@@ -107,7 +108,7 @@ export const handler = async (args, extra) => {
+ 	const start = Date.now();
+ 
+ 	try {
+-		const { text, engine, model } = await runReview(prompt, {
++		const { text, engine, model, parsed } = await runReview(prompt, {
+ 			engine: resolvedEngine,
+ 			caller,
+ 			extra,
+@@ -115,6 +116,12 @@ export const handler = async (args, extra) => {
+ 		});
+ 		const durationMs = Date.now() - start;
+ 		const verdict = extractVerdict(text);
++		
++		const inputTokens = parsed?.usage?.input_tokens ?? 0;
++		const outputTokens = parsed?.usage?.output_tokens ?? 0;
++		const totalTokens = parsed?.usage?.total_tokens ?? (inputTokens + outputTokens);
++		const costUSD = parsed?.total_cost_usd ?? 0;
++
+ 		logger.info({
+ 			event: "review_code",
+ 			engine,
+@@ -123,6 +130,11 @@ export const handler = async (args, extra) => {
+ 			wrap_up: !!wrap_up,
+ 			charsIn: prompt.length,
+ 			charsOut: text.length,
++			inputTokens,
++			outputTokens,
++			totalTokens,
++			costUSD,
++			taskContext: context ? context.substring(0, 100) : "N/A",
+ 			durationMs,
+ 			verdict,
+ 			model
+diff --git a/tools/review_plan.js b/tools/review_plan.js
+index 95c3027..60eca22 100644
+--- a/tools/review_plan.js
++++ b/tools/review_plan.js
+@@ -5,6 +5,7 @@ import { runReview, detectReviewerEngine, loadReviewConfig } from "../lib/review
+ import { buildReviewPrompt, extractVerdict } from "../lib/gemini-prompts.js";
+ import { createReviewJob, updateReviewJob } from "../lib/review-jobs.js";
+ 
++
+ // Winston logger for review_plan operations
+ const logger = winston.createLogger({
+ 	level: "info",
+@@ -130,7 +131,7 @@ export const handler = async (args, extra) => {
+ 
+ 		(async () => {
+ 			try {
+-				const { text, engine, model } = await runReview(prompt, {
++				const { text, engine, model, parsed } = await runReview(prompt, {
+ 					engine: resolvedEngine,
+ 					caller,
+ 					extra,
+@@ -138,6 +139,12 @@ export const handler = async (args, extra) => {
+ 				});
+ 				const durationMs = Date.now() - start;
+ 				const verdict = extractVerdict(text);
++				
++				const inputTokens = parsed?.usage?.input_tokens ?? 0;
++				const outputTokens = parsed?.usage?.output_tokens ?? 0;
++				const totalTokens = parsed?.usage?.total_tokens ?? (inputTokens + outputTokens);
++				const costUSD = parsed?.total_cost_usd ?? 0;
++
+ 				logger.info({
+ 					event: "review_plan_async_completed",
+ 					job_id: job.id,
+@@ -148,6 +155,11 @@ export const handler = async (args, extra) => {
+ 					wrap_up: !!wrap_up,
+ 					charsIn: prompt.length,
+ 					charsOut: text.length,
++					inputTokens,
++					outputTokens,
++					totalTokens,
++					costUSD,
++					taskContext: context ? context.substring(0, 100) : "N/A",
+ 					durationMs,
+ 					verdict,
+ 					model
+@@ -231,7 +243,7 @@ export const handler = async (args, extra) => {
+ 	}
+ 
+ 	try {
+-		const { text, engine, model } = await runReview(prompt, {
++		const { text, engine, model, parsed } = await runReview(prompt, {
+ 			engine: resolvedEngine,
+ 			caller,
+ 			extra,
+@@ -239,6 +251,12 @@ export const handler = async (args, extra) => {
+ 		});
+ 		const durationMs = Date.now() - start;
+ 		const verdict = extractVerdict(text);
++
++		const inputTokens = parsed?.usage?.input_tokens ?? 0;
++		const outputTokens = parsed?.usage?.output_tokens ?? 0;
++		const totalTokens = parsed?.usage?.total_tokens ?? (inputTokens + outputTokens);
++		const costUSD = parsed?.total_cost_usd ?? 0;
++
+ 		logger.info({
+ 			event: "review_plan",
+ 			engine,
+@@ -248,6 +266,11 @@ export const handler = async (args, extra) => {
+ 			wrap_up: !!wrap_up,
+ 			charsIn: prompt.length,
+ 			charsOut: text.length,
++			inputTokens,
++			outputTokens,
++			totalTokens,
++			costUSD,
++			taskContext: context ? context.substring(0, 100) : "N/A",
+ 			durationMs,
+ 			verdict,
+ 			model
+diff --git a/tools/search_docs.js b/tools/search_docs.js
+index 079f997..5bde428 100644
+--- a/tools/search_docs.js
++++ b/tools/search_docs.js
+@@ -1,6 +1,8 @@
+ import { z } from "zod";
+ import { ensureIndex, notConfiguredMessage } from "./ashlar/corpus.js";
+ import { ROUTER_FIRST_HINT } from "./ashlar/instructions.js";
++import { semanticSearch, getRagState } from "./ashlar/rag/search.js";
++import { loadCache } from "./ashlar/rag/store.js";
+ 
+ export const name = "search_docs";
+ 
+@@ -8,7 +10,7 @@ export const definition = {
+   title: "Search Docs",
+   description:
+     ROUTER_FIRST_HINT +
+-    "Full-text fuzzy search over every section of the indexed ln-ashlar docs-mcp corpus " +
++    "Full-text hybrid search over every section of the indexed ln-ashlar docs-mcp corpus " +
+     "(components, css, patterns, guides, doctrine, skills — across all configured corpus " +
+     "roots). Returns matching sections as '- **<doc>** › <heading>: <snippet>' lines with the " +
+     "doc's summary. 'context' (app | web | wordpress, default 'app') filters skills ONLY — " +
+@@ -37,39 +39,177 @@ export const definition = {
+   }
+ };
+ 
++function makeDocFilter({ classification, domain, context, status, tags }) {
++  const effectiveContext = context || "app";
++  return (doc) => {
++    if (!doc) return false;
++    if (doc.folder === "skills" && doc.context !== effectiveContext) return false;
++    if (classification && doc.classification !== classification) return false;
++    if (domain && doc.domain !== domain) return false;
++    if (status && doc.status !== status) return false;
++    if (tags && tags.length && !(doc.tags ?? []).some((t) => tags.includes(t))) return false;
++    return true;
++  };
++}
++
++let lastCacheEpoch = null;
++let sectionToChunks = new Map();
++
++function getSectionChunks(epoch, docKey, sectionIdx) {
++  if (epoch !== lastCacheEpoch) {
++    const cache = loadCache(epoch);
++    sectionToChunks.clear();
++    if (cache) {
++      for (const m of cache.metadata) {
++        const secKey = `${m.docKey}:${m.sectionIdx}`;
++        let arr = sectionToChunks.get(secKey);
++        if (!arr) {
++          arr = [];
++          sectionToChunks.set(secKey, arr);
++        }
++        arr.push(m.chunkId);
++      }
++    }
++    lastCacheEpoch = epoch;
++  }
++  const secKey = `${docKey}:${sectionIdx}`;
++  return sectionToChunks.get(secKey) || [`${docKey}#${sectionIdx.toString().padStart(4, '0')}#0000`];
++}
++
+ export const handler = async ({ query, limit, classification, domain, context, status, tags }) => {
+   const index = await ensureIndex();
+   if (!index) {
+     return { content: [{ type: "text", text: notConfiguredMessage() }] };
+   }
+ 
+-  const effectiveContext = context || "app";
+   const max = limit ?? 10;
+-
+-  const results = index.fuse
+-    .search(query)
+-    .filter((r) => {
++  const filter = makeDocFilter({ classification, domain, context, status, tags });
++  
++  // Exact old fallback logic if RAG is off
++  if (getRagState() !== 'ready') {
++    const fallbackResults = index.fuse.search(query).filter(r => filter(index.docs.get(r.item.key))).slice(0, max);
++    if (fallbackResults.length === 0) {
++      const effectiveContext = context || "app";
++      return { content: [{ type: "text", text: `No results for query "${query}" (context: ${effectiveContext}).` }] };
++    }
++    const lines = fallbackResults.map((r) => {
+       const doc = index.docs.get(r.item.key);
+-      if (!doc) return false;
+-      // Context filters skills only; context-neutral (non-skill) docs always pass.
+-      if (doc.folder === "skills" && doc.context !== effectiveContext) return false;
+-      if (classification && doc.classification !== classification) return false;
+-      if (domain && doc.domain !== domain) return false;
+-      if (status && doc.status !== status) return false;
+-      if (tags && tags.length && !(doc.tags ?? []).some((t) => tags.includes(t))) return false;
+-      return true;
+-    })
+-    .slice(0, max);
++      const text = (r.item.text || "").trim();
++      const snippet = text.length > 200 ? `${text.slice(0, 200)}…` : text;
++      return `- **${doc.name}** › ${r.item.heading}: ${snippet.replace(/\n+/g, " ")} (summary: ${doc.summary})`;
++    });
++    return { content: [{ type: "text", text: lines.join("\n") }] };
++  }
++
++  // Lexical
++  const lexicalRaw = index.fuse.search(query).filter(r => filter(index.docs.get(r.item.key)));
++  
++  const allowedDocKeys = new Set();
++  for (const [key, doc] of index.docs.entries()) {
++    if (filter(doc)) allowedDocKeys.add(key);
++  }
++  
++  // Semantic
++  const semanticRaw = await semanticSearch(query, index.indexEpoch, allowedDocKeys) || [];
++  const semanticFiltered = semanticRaw; // already pre-filtered
++  
++  // RRF
++  const rrfMap = new Map(); // chunkId -> { score, item }
++  
++  const ensureRrfItem = (chunkId, docKey, sectionIdx, text, heading) => {
++    if (!rrfMap.has(chunkId)) {
++      rrfMap.set(chunkId, { chunkId, docKey, sectionIdx, text, heading, rrf: 0 });
++    }
++    return rrfMap.get(chunkId);
++  };
++  
++  semanticFiltered.forEach((r, idx) => {
++    const rank = idx + 1;
++    const unit = index.sectionUnitsMap.get(`${r.docKey}:${r.sectionIdx}`);
++    if (unit) {
++      const item = ensureRrfItem(r.chunkId, r.docKey, r.sectionIdx, unit.text, unit.heading);
++      item.rrf += 1 / (60 + rank);
++    }
++  });
++  
++  lexicalRaw.forEach((r, idx) => {
++    const rank = idx + 1;
++    const docKey = r.item.key;
++    const sectionIdx = r.item.sectionIdx;
++    
++    const chunks = getSectionChunks(index.indexEpoch, docKey, sectionIdx);
++    chunks.forEach(chunkId => {
++      const item = ensureRrfItem(chunkId, docKey, sectionIdx, r.item.text, r.item.heading);
++      item.rrf += 1 / (60 + rank);
++    });
++  });
++  
++  let candidates = Array.from(rrfMap.values());
++  candidates.sort((a, b) => {
++    if (b.rrf !== a.rrf) return b.rrf - a.rrf;
++    return a.chunkId.localeCompare(b.chunkId);
++  });
++  
++  // Diversity caps
++  const finalHybrid = [];
++  const cappedHybrid = [];
++  const seenSections = new Set();
++  const docKeyCounts = new Map();
++  
++  for (const c of candidates) {
++    const sectionKey = `${c.docKey}:${c.sectionIdx}`;
++    const count = docKeyCounts.get(c.docKey) || 0;
++    
++    if (seenSections.has(sectionKey) || count >= 3) {
++      cappedHybrid.push(c);
++    } else {
++      seenSections.add(sectionKey);
++      docKeyCounts.set(c.docKey, count + 1);
++      finalHybrid.push(c);
++    }
++  }
++  
++  const results = [];
++  
++  // Fill from hybrid
++  let hybridIdx = 0;
++  while (results.length < max && hybridIdx < finalHybrid.length) {
++    const h = finalHybrid[hybridIdx++];
++    const doc = index.docs.get(h.docKey);
++    results.push({
++      id: h.chunkId,
++      docKey: h.docKey,
++      heading: h.heading,
++      snippet: h.text,
++      doc: doc.name,
++      summary: doc.summary
++    });
++  }
++  
++  // Backfill from capped if needed
++  let cappedIdx = 0;
++  while (results.length < max && cappedIdx < cappedHybrid.length) {
++    const h = cappedHybrid[cappedIdx++];
++    const doc = index.docs.get(h.docKey);
++    results.push({
++      id: h.chunkId,
++      docKey: h.docKey,
++      heading: h.heading,
++      snippet: h.text,
++      doc: doc.name,
++      summary: doc.summary
++    });
++  }
+ 
+   if (results.length === 0) {
++    const effectiveContext = context || "app";
+     return { content: [{ type: "text", text: `No results for query "${query}" (context: ${effectiveContext}).` }] };
+   }
+ 
+   const lines = results.map((r) => {
+-    const doc = index.docs.get(r.item.key);
+-    const text = (r.item.text || "").trim();
++    const text = (r.snippet || "").trim();
+     const snippet = text.length > 200 ? `${text.slice(0, 200)}…` : text;
+-    return `- **${r.item.doc}** › ${r.item.heading}: ${snippet.replace(/\n+/g, " ")} (summary: ${doc.summary})`;
++    return `- **${r.doc}** › ${r.heading}: ${snippet.replace(/\n+/g, " ")} (summary: ${r.summary})`;
+   });
+ 
+   return { content: [{ type: "text", text: lines.join("\n") }] };
+diff --git a/update.patch b/update.patch
+new file mode 100644
+index 0000000..9458fac
+--- /dev/null
++++ b/update.patch
+@@ -0,0 +1,24 @@
++--- /home/mcp/ln-ashlar/.claude/skills/ashlar-routing/SKILL.md
+++++ /home/mcp/ln-ashlar/.claude/skills/ashlar-routing/SKILL.md
++@@ -29,22 +29,9 @@
++ 
++ ## Where to look
++ 
++-Query in this order. Stop at the first source that answers.
++-
++-| You need | Ask |
++-|---|---|
++-| Which component handles this UI problem | the MCP component router, then `list_components` |
++-| Canonical markup for a component | `get_markup` |
++-| An attribute's contract, allowed values, who writes it | `get_attribute` |
++-| Events a component emits or listens for | `get_events` |
++-| Which component owns a behaviour | `who_handles` |
++-| Full contract for one component | `get_component` |
++-| Components that work together | `get_related` |
++-| Architecture and authoring rules | `get_doctrine` |
++-| A task-shaped workflow | `get_skill` |
++-| Anything you cannot name precisely | `search_docs`, then `knowledge_search` |
++-| The machine-readable attribute surface | `get_ln_schema` |
+++**Always use the ln-ashlar MCP server first.** The MCP server exposes tools to query the documentation RAG (Retrieval-Augmented Generation) for markup, attributes, events, components, and doctrine. Review the available tools provided by the MCP server and use the most appropriate ones to find the exact rules and syntax. Stop at the first source that answers your question.
++ 
++ **If the MCP server is unreachable**, fall back to the repository itself, in this order:

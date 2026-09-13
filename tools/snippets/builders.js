@@ -152,10 +152,12 @@ export function buildForm({
 	actionMethod,
 	submitLabel = "Зачувај",
 	cancelLabel,
+	inModal = false,
 	fields = []
 }) {
+	const cancelAttrs = inModal ? ` ${ATTR.modalClose}` : "";
 	const cancelSlot = cancelLabel
-		? `<li><button type="button" class="ln-btn ln-btn-ghost" ${ATTR.modalClose}>${escapeHtml(cancelLabel)}</button></li>`
+		? `<li><button type="button" class="ln-btn ln-btn-ghost"${cancelAttrs}>${escapeHtml(cancelLabel)}</button></li>`
 		: "";
 
 	return compileTemplate(

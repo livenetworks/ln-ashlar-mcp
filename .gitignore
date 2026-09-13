@@ -6,4 +6,6 @@ config/gemini.json
 config/claude.json
 resources/
 .claude
+cache/
+config/gpt.json
 

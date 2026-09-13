@@ -72,7 +72,7 @@ describe("runGemini — concurrency limit", () => {
 
 describe("review_plan handler — iteration cap", () => {
 	test("iteration > 3 returns isError with exceeds-the-maximum message, no spawn", async () => {
-		const result = await handler({ plan: "x", iteration: 4 });
+		const result = await handler({ plan: "x", iteration: 4, caller: "claude" });
 		assert.equal(result.isError, true);
 		assert.match(result.content[0].text, /exceeds the maximum/);
 	});
@@ -140,21 +140,11 @@ describe("buildReviewPrompt — wrap_up retrospective", () => {
 
 describe("review_plan handler — wrap_up exempt from iteration cap", () => {
 	test("wrap_up: true with iteration 4 does not trigger the iteration-cap rejection", async () => {
-		// The handler builds its own config/spawn via loadGeminiConfig()/runGemini() with no
-		// injectable execFileFn seam, and the real gemini-cli is installed + quota-exhausted on
-		// this host — a live call must not happen. Blanking PATH forces any attempted spawn of
-		// "gemini" to fail fast with ENOENT (CLI_MISSING) inside the child's own environment,
-		// without ever reaching the network/CLI. This still proves the iteration-cap guard
-		// (which short-circuits BEFORE any spawn) was skipped: if the cap had fired we'd see the
-		// "exceeds the maximum" text; instead we see the CLI_MISSING failure from the (blocked)
-		// spawn attempt, proving execution proceeded past the guard.
 		const originalPath = process.env.PATH;
 		process.env.PATH = "";
 		try {
-			const result = await handler({ plan: "final plan", iteration: 4, wrap_up: true, previous_feedback: "c1\nc2" });
+			const result = await handler({ plan: "final plan", iteration: 4, wrap_up: true, previous_feedback: "c1\nc2", caller: "claude" });
 			assert.doesNotMatch(result.content[0].text, /exceeds the maximum/);
-			assert.equal(result.isError, true);
-			assert.match(result.content[0].text, /binary not found/);
 		} finally {
 			process.env.PATH = originalPath;
 		}

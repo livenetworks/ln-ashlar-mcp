@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "postinstall": "node scripts/patch-mcp-sdk.js",
     "test": "RAG_ENABLED=0 node --test test/*.test.js",
     "lint:docs": "node tools/ashlar/lint-cli.js",
     "lint:snippets": "node scripts/lint-snippets.js",

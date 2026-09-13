@@ -1,0 +1,11 @@
+{
+	"model": "GPT-OSS 120B (Medium)",
+	"timeoutMs": 240000,
+	"concurrency": 2,
+	"maxIterations": 3,
+	"gptBin": "agy",
+	"gptHome": "/home/mcp",
+	"gptCwd": "/home/mcp/ln-ashlar",
+	"maxOutputBytes": 1048576,
+	"auditLog": true
+}

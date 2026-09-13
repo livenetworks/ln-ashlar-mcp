@@ -2,11 +2,10 @@ import { z } from "zod";
 import winston from "winston";
 import "winston-daily-rotate-file";
 import { runReview, detectReviewerEngine, loadReviewConfig } from "../lib/review-runner.js";
-import { buildReviewPrompt, extractVerdict } from "../lib/gemini-prompts.js";
+import { buildAuditReviewPrompt, extractVerdict } from "../lib/gemini-prompts.js";
 import { createReviewJob, updateReviewJob, estimateWaitTime, formatDuration } from "../lib/review-jobs.js";
 
-
-// Winston logger for review_plan operations
+// Winston logger for review_audit operations
 const logger = winston.createLogger({
 	level: "info",
 	format: winston.format.combine(
@@ -44,60 +43,23 @@ const auditLogger = winston.createLogger({
 	]
 });
 
-export const name = "review_plan";
+export const name = "review_audit";
 
 export const definition = {
-	title: "Review Plan",
+	title: "Review Audit Report",
 	description:
-		"MANDATORY before any implementation begins. Any plan that will be executed MUST be submitted here first. " +
-		"Submit a plan (architecture spec OR implementation/executor plan) to an " +
-		"independent reviewer for critique (Claude or Gemini/Antigravity). " +
-		"IMPORTANT: Reviewers have read access to the ln-ashlar design system " +
-		"but NOT to your project workspace. You MUST pass relevant source files " +
-		"in `project_files` so reviewers can verify your claims. Include the " +
-		"current (pre-change) content of every file your plan modifies, plus " +
-		"any files referenced for architectural context (mixins, configs, " +
-		"related components). Without project files, reviewers can only judge " +
-		"the plan's internal logic, not its correctness against the actual codebase. " +
-		"Stateless — YOU drive the loop. " +
-		"Protocol: (1) call with your `plan` and `plan_type`; (2) read the returned " +
-		"critique (a Verdict of APPROVE or REVISE, plus numbered issues); (3) if " +
-		"REVISE, revise your plan and call again with `iteration` incremented AND " +
-		"`previous_feedback` set to the critique you just received; (4) STOP when " +
-		"the Verdict is APPROVE or when `iteration` reaches 3 — the server rejects " +
-		"`iteration` > 3. Pass `context` (project background/constraints) on every " +
-		"call so the reviewer judges against your constraints. After APPROVE or " +
-		"iteration 3, you MAY make one additional call with `wrap_up: true` " +
-		"(concatenate ALL previous critiques into `previous_feedback` and pass the " +
-		"final plan as `plan`) to get a short retrospective of the whole review " +
-		"conversation for the user — this call is exempt from the iteration cap.",
+		"Submit a component audit report for forensic verification against JS, SCSS, README, schema, and ln-ashlar DOCTRINE.",
 	inputSchema: {
-		plan: z.string().min(1).describe("The plan markdown to be reviewed"),
-		plan_type: z
-			.enum(["architecture", "implementation"])
-			.optional()
-			.describe("Type of plan under review; omit for a generic review"),
-		context: z.string().optional().describe("Project background, constraints, and architecture decisions for the reviewer to judge against. Keep concise: project name, tech stack, key constraints, observed bugs."),
-		project_files: z.string().optional().describe(
-			"STRONGLY RECOMMENDED. Source code of files referenced or modified by the plan, " +
-			"concatenated with clear path headers. The reviewers have access to the ln-ashlar " +
-			"design system but NOT to your project — these are the only project files they " +
-			"can see. Format each file as:\n" +
-			"```\n=== path/to/file.scss (lines 50-120) ===\n<file contents>\n```\n" +
-			"Include: (1) every file the plan modifies (BEFORE state), " +
-			"(2) files the plan references for context (e.g. mixin usage, imports, related components), " +
-			"(3) build/config files if the plan touches build pipeline. Omit unchanged boilerplate."
-		),
+		component: z.string().min(1).describe("Component name (e.g. ln-toggle)"),
+		audit: z.string().min(1).describe("The audit markdown text to be reviewed"),
+		caller: z.string().min(1).describe("Identifier of calling agent (e.g. 'gemini', 'claude', 'antigravity')"),
+		project_files: z.string().optional().describe("Source files: JS, SCSS, README, schema, tests"),
 		previous_feedback: z.string().optional().describe("The critique received on the previous iteration, when revising"),
 		iteration: z.number().int().min(1).optional().describe("Current iteration number; server rejects values above the configured max (default 3)"),
 		reviewer: z
 			.enum(["claude", "gemini", "auto"])
 			.optional()
 			.describe("Reviewer AI engine to use ('claude', 'gemini', or 'auto' for complementary crossover review). Default: 'auto'"),
-		caller: z
-			.string()
-			.optional()
-			.describe("Identifier of calling agent (e.g. 'claude', 'antigravity') if manual caller override is desired"),
 		wrap_up: z
 			.boolean()
 			.optional()
@@ -110,8 +72,7 @@ export const definition = {
 };
 
 export const handler = async (args, extra) => {
-	const { plan, plan_type, context, project_files, previous_feedback, iteration, wrap_up, reviewer, caller, async: isAsync } = args;
-	const planType = plan_type || "generic";
+	const { component, audit, project_files, caller, previous_feedback, iteration, wrap_up, reviewer, async: isAsync } = args;
 	const apiKeyId = extra?.authInfo?.clientId ?? "unknown";
 
 	const resolvedEngine = detectReviewerEngine({
@@ -129,22 +90,23 @@ export const handler = async (args, extra) => {
 		return {
 			content: [{
 				type: "text",
-				text: `Iteration ${currentIteration} exceeds the maximum of ${cfg.maxIterations}. Stop iterating and finalize your plan.`
+				text: `Iteration ${currentIteration} exceeds the maximum of ${cfg.maxIterations}. Stop iterating and finalize your audit report.`
 			}],
 			isError: true
 		};
 	}
 
-	const prompt = buildReviewPrompt({ planType, context, projectFiles: project_files, previousFeedback: previous_feedback, plan, wrapUp: wrap_up });
+	const prompt = buildAuditReviewPrompt({ component, audit, projectFiles: project_files, previousFeedback: previous_feedback, wrapUp: wrap_up });
 	const start = Date.now();
 
 	if (isAsync) {
 		const job = createReviewJob({
-			planType,
+			audit,
 			iteration: currentIteration,
 			engine: resolvedEngine,
 			model: cfg.model,
-			chars: prompt.length
+			chars: prompt.length,
+			type: "audit"
 		});
 
 		(async () => {
@@ -164,11 +126,11 @@ export const handler = async (args, extra) => {
 				const costUSD = parsed?.total_cost_usd ?? 0;
 
 				logger.info({
-					event: "review_plan_async_completed",
+					event: "review_audit_async_completed",
 					job_id: job.id,
 					engine,
 					apiKeyId,
-					plan_type: planType,
+					component,
 					iteration: currentIteration,
 					wrap_up: !!wrap_up,
 					charsIn: prompt.length,
@@ -177,7 +139,6 @@ export const handler = async (args, extra) => {
 					outputTokens,
 					totalTokens,
 					costUSD,
-					taskContext: context ? context.substring(0, 100) : "N/A",
 					durationMs,
 					verdict,
 					model
@@ -188,7 +149,7 @@ export const handler = async (args, extra) => {
 						job_id: job.id,
 						engine,
 						apiKeyId,
-						plan_type: planType,
+						component,
 						iteration: currentIteration,
 						wrap_up: !!wrap_up,
 						model,
@@ -207,11 +168,11 @@ export const handler = async (args, extra) => {
 			} catch (e) {
 				const durationMs = Date.now() - start;
 				logger.warn({
-					event: "review_plan_async_failed",
+					event: "review_audit_async_failed",
 					job_id: job.id,
 					engine: resolvedEngine,
 					apiKeyId,
-					plan_type: planType,
+					component,
 					iteration: currentIteration,
 					wrap_up: !!wrap_up,
 					charsIn: prompt.length,
@@ -226,7 +187,7 @@ export const handler = async (args, extra) => {
 						job_id: job.id,
 						engine: resolvedEngine,
 						apiKeyId,
-						plan_type: planType,
+						component,
 						iteration: currentIteration,
 						wrap_up: !!wrap_up,
 						model: cfg.model,
@@ -248,11 +209,11 @@ export const handler = async (args, extra) => {
 		return {
 			content: [{
 				type: "text",
-				text: `⏳ **Review started in the background.**\n\n` +
+				text: `⏳ **Audit review started in the background.**\n\n` +
 					`- **Job ID:** \`${job.id}\`\n` +
 					`- **Reviewer Engine:** ${resolvedEngine}\n` +
 					`- **Model:** ${cfg.model}\n` +
-					`- **Plan Type:** ${planType}\n` +
+					`- **Component:** ${component}\n` +
 					`- **Iteration:** ${currentIteration}\n\n` +
 					`**Next step:** Wait about ${waitTimeFormatted}, then call the \`get_review_result\` tool with:\n` +
 					`\`\`\`json\n{\n  "job_id": "${job.id}"\n}\n\`\`\`\n` +
@@ -277,10 +238,10 @@ export const handler = async (args, extra) => {
 		const costUSD = parsed?.total_cost_usd ?? 0;
 
 		logger.info({
-			event: "review_plan",
+			event: "review_audit",
 			engine,
 			apiKeyId,
-			plan_type: planType,
+			component,
 			iteration: currentIteration,
 			wrap_up: !!wrap_up,
 			charsIn: prompt.length,
@@ -289,7 +250,6 @@ export const handler = async (args, extra) => {
 			outputTokens,
 			totalTokens,
 			costUSD,
-			taskContext: context ? context.substring(0, 100) : "N/A",
 			durationMs,
 			verdict,
 			model
@@ -299,7 +259,7 @@ export const handler = async (args, extra) => {
 				event: "review_audit",
 				engine,
 				apiKeyId,
-				plan_type: planType,
+				component,
 				iteration: currentIteration,
 				wrap_up: !!wrap_up,
 				model,
@@ -308,14 +268,20 @@ export const handler = async (args, extra) => {
 				response: text
 			});
 		}
-		return { content: [{ type: "text", text }] };
+
+		return {
+			content: [{
+				type: "text",
+				text
+			}]
+		};
 	} catch (e) {
 		const durationMs = Date.now() - start;
 		logger.warn({
-			event: "review_plan_failed",
+			event: "review_audit_failed",
 			engine: resolvedEngine,
 			apiKeyId,
-			plan_type: planType,
+			component,
 			iteration: currentIteration,
 			wrap_up: !!wrap_up,
 			charsIn: prompt.length,
@@ -329,7 +295,7 @@ export const handler = async (args, extra) => {
 				event: "review_audit",
 				engine: resolvedEngine,
 				apiKeyId,
-				plan_type: planType,
+				component,
 				iteration: currentIteration,
 				wrap_up: !!wrap_up,
 				model: cfg.model,
@@ -338,6 +304,13 @@ export const handler = async (args, extra) => {
 				response: e.message
 			});
 		}
-		return { content: [{ type: "text", text: e.message }], isError: true };
+
+		return {
+			content: [{
+				type: "text",
+				text: `❌ Audit review failed (${e.code || "ERROR"}): ${e.message}`
+			}],
+			isError: true
+		};
 	}
 };

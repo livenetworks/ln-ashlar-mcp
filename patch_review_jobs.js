@@ -1,60 +1,17 @@
-import { randomBytes } from "crypto";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+const fs = require('fs');
+const content = fs.readFileSync('/home/mcp/server/lib/review-jobs.js', 'utf8');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const STATS_FILE = path.resolve(__dirname, "..", ".review-stats.json");
+const newCode = `import { randomBytes } from "crypto";
 
 const jobs = new Map();
-const JOB_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours TTL
+const JOB_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours TTL
 
 // Track recent completions to estimate wait times based on prompt size
 const stats = {
 	history: [] // array of { chars: number, durationMs: number }
 };
 
-// Load existing stats if available
-try {
-	if (fs.existsSync(STATS_FILE)) {
-		const data = fs.readFileSync(STATS_FILE, "utf8");
-		const parsed = JSON.parse(data);
-		if (Array.isArray(parsed)) {
-			stats.history = parsed.slice(-50);
-		}
-	}
-} catch (e) {
-	console.error("Failed to load review stats:", e);
-}
-
-function updateStats(job, durationMs) {
-	const chars = job.chars || 0;
-	const entry = {
-		timestamp: Date.now(),
-		id: job.id,
-		type: job.type,
-		planType: job.planType || null,
-		iteration: job.iteration,
-		engine: job.engine,
-		model: job.model,
-		chars,
-		durationMs
-	};
-
-	// Append to permanent record
-	try {
-		let allStats = [];
-		if (fs.existsSync(STATS_FILE)) {
-			const data = fs.readFileSync(STATS_FILE, "utf8");
-			allStats = JSON.parse(data);
-		}
-		allStats.push(entry);
-		fs.writeFileSync(STATS_FILE, JSON.stringify(allStats, null, 2));
-	} catch (e) {
-		console.error("Failed to save review stats:", e);
-	}
-
-	// Update in-memory for estimation
+function updateStats(chars, durationMs) {
 	stats.history.push({ chars, durationMs });
 	if (stats.history.length > 50) {
 		stats.history.shift(); // keep last 50
@@ -88,18 +45,18 @@ export function estimateWaitTime(chars) {
  */
 export function formatDuration(ms) {
 	const minutes = (ms / 1000 / 60).toFixed(1);
-	return `${minutes} minutes`;
+	return \`\${minutes} minutes\`;
 }
 
 /**
  * Creates a new background review job.
  */
-export function createReviewJob({ planType, diff, audit, type, iteration, engine, model, chars }) {
-	const id = `rev_${randomBytes(6).toString("hex")}`;
+export function createReviewJob({ planType, diff, iteration, engine, model, chars }) {
+	const id = \`rev_\${randomBytes(6).toString("hex")}\`;
 	const job = {
 		id,
 		status: "running",
-		type: type || (planType ? "plan" : (audit ? "audit" : "code")),
+		type: planType ? "plan" : "code",
 		planType,
 		iteration: iteration ?? 1,
 		engine,
@@ -131,13 +88,6 @@ export function getReviewJob(id) {
 }
 
 /**
- * Deletes a review job by its ID.
- */
-export function deleteReviewJob(id) {
-	return jobs.delete(id);
-}
-
-/**
  * Updates a review job with completion or error details.
  */
 export function updateReviewJob(id, updates) {
@@ -146,7 +96,7 @@ export function updateReviewJob(id, updates) {
 	Object.assign(job, updates);
 	
 	if (updates.status === "completed" && updates.durationMs && job.chars) {
-		updateStats(job, updates.durationMs);
+		updateStats(job.chars, updates.durationMs);
 	}
 	
 	return job;
@@ -159,3 +109,7 @@ export function _clearJobsForTest() {
 	jobs.clear();
 	stats.history = [];
 }
+`;
+
+fs.writeFileSync('/home/mcp/server/lib/review-jobs.js', newCode);
+console.log("Patched review-jobs.js");
