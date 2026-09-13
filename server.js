@@ -32,8 +32,9 @@ app.use((req, res, next) => {
   } else {
     res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept, mcp-session-id, mcp-protocol-version, x-client-id, X-Client-Id, *');
   }
-  res.header('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version, content-type, content-length');
+  res.header('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version, content-type, content-length, x-accel-buffering');
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('X-Accel-Buffering', 'no');
 
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);

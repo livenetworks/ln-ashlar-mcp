@@ -37,6 +37,7 @@ for (const filePath of filesToPatch) {
     content = content.replace(target, replacement);
     content = content.replace('cancel: () => {', 'cancel: () => {\n                if (pingInterval) clearInterval(pingInterval);');
     content = content.replace('cleanup: () => {', 'cleanup: () => {\n                if (pingInterval) clearInterval(pingInterval);');
+    content = content.replace("Connection: 'keep-alive'", "Connection: 'keep-alive',\n            'X-Accel-Buffering': 'no'");
     fs.writeFileSync(filePath, content, 'utf-8');
     console.log(`[patch-mcp-sdk] Successfully patched: ${path.basename(filePath)}`);
   } else {
