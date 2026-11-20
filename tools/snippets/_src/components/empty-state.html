@@ -1,9 +1,7 @@
 <!-- ln-ashlar Empty State Component -->
-<div class="ln-empty-state" id="{{id}}" data-ln-empty-state>
-	<div class="ln-empty-state-icon">
-		<svg class="ln-icon" aria-hidden="true"><use href="#{{icon_id}}"></use></svg>
-	</div>
-	<h3 class="ln-empty-state-title">{{title}}</h3>
-	<p class="ln-empty-state-description">{{description}}</p>
+<div id="{{id}}" data-ln-empty-state="no-data">
+	<svg class="ln-icon ln-icon--xl" aria-hidden="true"><use href="#{{icon_id}}"></use></svg>
+	<h3>{{title}}</h3>
+	<p>{{description}}</p>
 	<!-- ACTION_SLOT -->
 </div>

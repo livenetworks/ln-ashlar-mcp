@@ -48,7 +48,7 @@ export const handler = async ({ id, title, subtitle, badge, content, actions = [
 	if (actions.length) {
 		const items = actions
 			.map((a) => {
-				const cls = a.primary ? "ln-btn ln-btn-primary" : "ln-btn ln-btn-secondary";
+				const cls = a.primary ? "btn" : "btn btn-ghost";
 				return a.href
 					? `\t\t<a href="${escapeHtml(a.href)}" class="${cls}">${escapeHtml(a.label)}</a>`
 					: `\t\t<button type="button" class="${cls}">${escapeHtml(a.label)}</button>`;

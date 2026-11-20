@@ -157,7 +157,7 @@ export function buildForm({
 }) {
 	const cancelAttrs = inModal ? ` ${ATTR.modalClose}` : "";
 	const cancelSlot = cancelLabel
-		? `<li><button type="button" class="ln-btn ln-btn-ghost"${cancelAttrs}>${escapeHtml(cancelLabel)}</button></li>`
+		? `<li><button type="button" class="btn btn-ghost"${cancelAttrs}>${escapeHtml(cancelLabel)}</button></li>`
 		: "";
 
 	return compileTemplate(
@@ -436,7 +436,7 @@ export function buildTable({
 			const fillForm = attr(ATTR.fillForm, formId);
 			cells.push(
 				`<td>\n` +
-					`\t<button type="button" class="ln-btn ln-btn-icon"${modalFor}${fillForm} ${ATTR.tableRowAction}="edit" aria-label="Уреди">\n` +
+					`\t<button type="button" class="btn btn-ghost"${modalFor}${fillForm} ${ATTR.tableRowAction}="edit" aria-label="Уреди">\n` +
 					`\t\t<svg class="ln-icon" aria-hidden="true"><use href="#ln-icon-edit"></use></svg>\n` +
 					`\t</button>\n` +
 					`</td>`
@@ -570,10 +570,7 @@ export function buildEmptyState({
 	let actionSlot = "";
 	if (actionLabel) {
 		const href = actionModalId ? ` href="#${escapeHtml(actionModalId)}"` : ' href="#"';
-		actionSlot =
-			`<div class="ln-empty-state-action">\n` +
-			`\t<a${href} class="ln-btn ln-btn-primary"${attr(ATTR.modalFor, actionModalId)}>${escapeHtml(actionLabel)}</a>\n` +
-			`</div>`;
+		actionSlot = `\t<a${href} class="btn"${attr(ATTR.modalFor, actionModalId)}>${escapeHtml(actionLabel)}</a>\n`;
 	}
 
 	const normalizedIcon = iconId.startsWith("ln-icon-") ? iconId : `ln-icon-${iconId.replace(/^ln-/, "")}`;
@@ -659,8 +656,8 @@ export function buildModal({
 			`\t</main>\n\n` +
 			`\t<footer class="ln-modal-footer">\n` +
 			`\t\t<ul class="ln-form-actions">\n` +
-			`\t\t\t<li><button type="submit" class="ln-btn ln-btn-primary">${escapeHtml(formConfig.submit_label || "Зачувај")}</button></li>\n` +
-			`\t\t\t<li><button type="button" class="ln-btn ln-btn-ghost" ${ATTR.modalClose}>Откажи</button></li>\n` +
+			`\t\t\t<li><button type="submit" class="btn">${escapeHtml(formConfig.submit_label || "Зачувај")}</button></li>\n` +
+			`\t\t\t<li><button type="button" class="btn btn-ghost" ${ATTR.modalClose}>Откажи</button></li>\n` +
 			`\t\t</ul>\n` +
 			`\t</footer>\n` +
 			`</form>`;
